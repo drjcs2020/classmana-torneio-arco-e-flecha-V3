@@ -1,0 +1,605 @@
+/* V2.1: resultado montado com peças vazadas. Nomes, turmas e placares são dinâmicos. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result:not(.hidden){
+ position:fixed!important;inset:0!important;z-index:1500!important;box-sizing:border-box!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ padding:clamp(4px,.8dvh,12px)!important;overflow-x:hidden!important;overflow-y:auto!important;
+ background:#09223c url('assets/v2/backgrounds/duel.webp') center/cover no-repeat!important;
+ backdrop-filter:none!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .finish-card{
+ box-sizing:border-box!important;isolation:isolate!important;display:flex!important;flex-direction:column!important;
+ justify-content:space-between!important;align-items:center!important;gap:clamp(2px,.5dvh,7px)!important;
+ width:min(99vw,1300px)!important;max-width:1300px!important;
+ height:calc(100dvh - clamp(8px,1.6dvh,24px))!important;min-height:0!important;max-height:none!important;
+ flex:0 0 auto!important;padding:0 clamp(4px,.8vw,12px)!important;margin:auto!important;
+ border:0!important;border-radius:0!important;outline:0!important;box-shadow:none!important;
+ background:transparent!important;overflow:visible!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result :is(.cm-v21-hide,.cm-finish-heroes,.cm-v2-result-note,.cm-finish-heading){display:none!important}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-head{
+ order:0!important;flex:0 0 auto!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+ width:min(100%,980px)!important;gap:0!important;margin:0!important;padding:0!important;background:none!important;border:0!important;box-shadow:none!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-logo{
+ display:block!important;width:min(34vw,310px)!important;height:clamp(27px,5.3dvh,48px)!important;
+ object-fit:contain!important;margin:0 auto -4px!important;filter:drop-shadow(0 2px 4px #000b)!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-head #finish-title{
+ box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:center!important;
+ width:min(86vw,810px)!important;height:clamp(49px,10dvh,95px)!important;min-height:0!important;
+ margin:0!important;padding:2px clamp(20px,4.5vw,75px)!important;
+ color:#ffe0a0!important;font:900 clamp(22px,4.4vw,63px)/1 'Cinzel',Georgia,serif!important;
+ letter-spacing:.015em!important;text-align:center!important;white-space:nowrap!important;overflow:hidden!important;
+ text-shadow:0 3px 2px #622408,0 5px 8px #16061a!important;
+ border:0!important;border-radius:0!important;box-shadow:none!important;
+ background:transparent url('assets/v21/result/ribbon-empty.svg') center/100% 100% no-repeat!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-subtitle{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ width:min(65vw,580px)!important;height:clamp(25px,5dvh,43px)!important;
+ margin:-3px auto 0!important;padding:2px clamp(18px,3vw,30px)!important;box-sizing:border-box!important;
+ color:#ffe5a6!important;font:900 clamp(11px,1.5vw,20px)/1.05 'Cinzel',Georgia,serif!important;
+ letter-spacing:.12em!important;text-align:center!important;white-space:nowrap!important;
+ background:transparent url('assets/v21/result/subtitle-empty.svg') center/100% 100% no-repeat!important;
+ border:0!important;box-shadow:none!important;text-shadow:0 2px 3px #001527!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-stage{
+ order:1!important;flex:1 1 auto!important;box-sizing:border-box!important;min-height:0!important;
+ display:grid!important;grid-template-columns:minmax(0,1fr) minmax(205px,.95fr) minmax(0,1fr)!important;
+ align-items:center!important;justify-items:center!important;gap:clamp(4px,1vw,18px)!important;
+ width:min(100%,1230px)!important;max-width:1230px!important;margin:0 auto!important;padding:0!important;
+ background:none!important;border:0!important;overflow:visible!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player{
+ position:relative!important;isolation:isolate!important;display:block!important;box-sizing:border-box!important;
+ width:min(100%,calc(100dvh * .45),335px)!important;max-height:100%!important;height:auto!important;
+ min-width:0!important;min-height:0!important;aspect-ratio:600/840!important;
+ padding:0!important;margin:0!important;background:transparent!important;border:0!important;box-shadow:none!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-crop{
+ position:absolute!important;z-index:1!important;left:11.5%!important;top:12.4%!important;
+ width:77%!important;height:61%!important;overflow:hidden!important;border:0!important;box-shadow:none!important;background:transparent!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-crop img{
+ display:block!important;position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ max-width:none!important;max-height:none!important;object-fit:cover!important;object-position:50% 24%!important;
+ transform:scale(1.13)!important;transform-origin:50% 28%!important;filter:none!important;background:transparent!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-mirror .cm-v21-crop img{transform:scaleX(-1) scale(1.13)!important}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-frame{
+ position:absolute!important;z-index:3!important;inset:0!important;width:100%!important;height:100%!important;
+ object-fit:fill!important;max-width:none!important;max-height:none!important;
+ background:transparent!important;filter:drop-shadow(0 4px 8px #0008)!important;pointer-events:none!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-crest{
+ position:absolute!important;z-index:4!important;top:5%!important;right:5%!important;
+ width:23%!important;height:18%!important;object-fit:contain!important;filter:drop-shadow(0 3px 4px #0008)!important;pointer-events:none!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result :is(.cm-v21-name,.cm-v21-house){
+ box-sizing:border-box!important;position:absolute!important;z-index:5!important;left:10%!important;width:80%!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ margin:0!important;padding:0 1px!important;text-align:center!important;white-space:nowrap!important;
+ overflow:hidden!important;text-overflow:ellipsis!important;border:0!important;box-shadow:none!important;background:transparent!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-name{
+ top:78.7%!important;height:7%!important;color:#fff2d0!important;
+ font:900 clamp(11px,1.8vw,24px)/1.1 'Cinzel',Georgia,serif!important;text-shadow:0 2px 3px #070c20!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-house{
+ top:88.5%!important;height:5%!important;color:#ffe4a2!important;
+ font:900 clamp(7px,.97vw,13px)/1.1 'Nunito',Arial,sans-serif!important;text-shadow:0 1px 3px #06112d!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-winner{
+ box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:center!important;
+ position:absolute!important;z-index:9!important;left:50%!important;top:-3%!important;transform:translateX(-50%)!important;
+ width:65%!important;height:14%!important;
+ background:transparent url('assets/v21/result/winner-empty.svg') center/100% 100% no-repeat!important;
+ color:#fff1c1!important;font:900 clamp(9px,1.4vw,17px)/1 'Cinzel',Georgia,serif!important;
+ text-shadow:0 2px 4px #260b05!important;pointer-events:none!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-winner span{margin-top:15%!important}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-scores{
+ position:relative!important;display:flex!important;align-items:center!important;justify-content:center!important;
+ width:100%!important;height:clamp(92px,17dvh,200px)!important;gap:clamp(22px,2.6vw,42px)!important;min-width:0!important;margin:0!important;padding:0!important;
+ background:none!important;border:0!important;box-shadow:none!important;filter:drop-shadow(0 4px 7px #00122dbb)!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-total{
+ flex:1 1 0!important;display:block!important;min-width:0!important;text-align:center!important;
+ font:900 clamp(30px,5vw,77px)/1 'Cinzel',Georgia,serif!important;color:#dcf4ff!important;
+ letter-spacing:-.055em!important;text-shadow:0 1px 0 #fff,0 3px 2px #186ab3,0 5px 9px #00152e!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-vs{
+ flex:0 0 auto!important;display:grid!important;place-items:center!important;position:relative!important;
+ width:clamp(66px,8vw,125px)!important;aspect-ratio:1!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-vs-art{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:contain!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-vs>span{
+ position:relative!important;z-index:2!important;color:#ffe09d!important;
+ font:900 clamp(25px,3.25vw,48px)/1 'Cinzel',Georgia,serif!important;text-shadow:0 2px 3px #5b300b!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-await{
+ position:absolute!important;top:100%!important;left:0!important;right:0!important;
+ text-align:center!important;font:800 clamp(9px,.9vw,12px)/1 'Nunito',sans-serif!important;color:#ffe5a1!important;text-shadow:0 2px 3px #000!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result :is(#finish-results,#share-help){
+ position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;
+ clip-path:inset(50%)!important;margin:-1px!important;padding:0!important;border:0!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result #finish-desc{
+ order:2!important;display:block!important;flex:none!important;max-width:96%!important;max-height:33px!important;
+ margin:0 auto!important;padding:0!important;background:none!important;border:0!important;
+ color:#ffe8b9!important;font:800 clamp(10px,1.1vw,14px)/1.1 'Nunito',sans-serif!important;
+ text-align:center!important;overflow:hidden!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .finish-actions{
+ box-sizing:border-box!important;order:3!important;display:flex!important;flex:none!important;flex-direction:row!important;
+ align-items:center!important;justify-content:center!important;flex-wrap:nowrap!important;
+ width:min(100%,970px)!important;max-width:970px!important;height:clamp(44px,8.5dvh,76px)!important;
+ gap:clamp(8px,1.5vw,24px)!important;margin:0 auto!important;padding:0 4px!important;background:none!important;border:0!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .finish-actions button:not(.hidden){
+ display:flex!important;align-items:center!important;justify-content:center!important;flex:1 1 0!important;
+ box-sizing:border-box!important;min-height:38px!important;height:85%!important;min-width:0!important;
+ max-width:420px!important;margin:0!important;padding:5px 12px!important;
+ border:3px solid #fbd784!important;border-radius:12px!important;
+ background:linear-gradient(#2865b1,#0c3272 58%,#04183c)!important;color:#fff0c5!important;
+ font:900 clamp(11px,1.55vw,20px)/1.05 'Cinzel',Georgia,serif!important;white-space:nowrap!important;
+ box-shadow:0 5px 12px #0009,inset 0 0 0 2px #fff4b630!important;text-shadow:0 2px 3px #000b!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .finish-actions #play-again:not(.hidden){
+ flex:1.4 1 0!important;background:linear-gradient(#30d87b,#118b45 60%,#07502c)!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .finish-actions button:hover{filter:brightness(1.15)!important}
+@media(max-width:760px){
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-logo{width:min(58vw,210px)!important;height:4dvh!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-head #finish-title{
+  width:95vw!important;height:clamp(44px,8dvh,64px)!important;font-size:clamp(18px,5.2vw,38px)!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-subtitle{
+  width:85vw!important;height:clamp(24px,4dvh,34px)!important;
+  font-size:clamp(9px,2vw,15px)!important;letter-spacing:.03em!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-stage{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-template-rows:minmax(0,1fr) auto!important;gap:2px!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player{
+  width:min(45vw,calc(51dvh * .714),250px)!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-stage>.cm-v21-player:first-child{grid-column:1!important;grid-row:1!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-stage>.cm-v21-player:last-child{grid-column:2!important;grid-row:1!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-scores{
+  grid-column:1/-1!important;grid-row:2!important;justify-self:center!important;max-width:290px!important;height:clamp(40px,10dvh,68px)!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-vs{width:clamp(37px,9vw,65px)!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-total{font-size:clamp(25px,7.5vw,41px)!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-vs>span{font-size:clamp(18px,5vw,30px)!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-name{font-size:clamp(9px,2.25vw,15px)!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-house{font-size:clamp(6px,1.42vw,9px)!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-winner{font-size:clamp(7px,1.5vw,11px)!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .finish-actions{height:clamp(40px,7dvh,60px)!important;gap:6px!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .finish-actions button:not(.hidden){font-size:clamp(9px,2vw,15px)!important;padding:3px!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result #finish-desc{max-height:28px!important;font-size:clamp(9px,1.7vw,12px)!important}
+}
+@media(max-height:540px) and (min-width:761px){
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-logo{height:4dvh!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-head #finish-title{height:9dvh!important;font-size:clamp(20px,4vw,46px)!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-subtitle{height:4dvh!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .finish-actions{height:8dvh!important}
+}
+
+
+/* === ClassMana V2.1: artes ORIGINAIS, transparentes, separadas e aprovadas ===
+   Este bloco substitui o visual vetorial simplificado. Não altera a pontuação,
+   a mecânica, nem os textos dinâmicos dos jogadores. 2026-11-09. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-head{
+  gap:0!important;overflow:visible!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-logo{
+  height:clamp(27px,4.8dvh,43px)!important;width:min(32vw,290px)!important;
+  margin:0 auto -6px!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-head #finish-title{
+  width:min(70vw,660px)!important;
+  height:clamp(72px,12.8dvh,118px)!important;
+  border:0!important;padding:0 18px!important;
+  background:transparent url('assets/v21/result/ribbon-empty.svg') center/100% 100% no-repeat!important;
+  color:#ffe4a3!important;font:900 clamp(21px,3.5vw,49px)/1 'Cinzel',Georgia,serif!important;
+  text-shadow:0 2px 2px #3f1015,0 4px 5px #0008!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-outcome="win"] .cm-v21-head #finish-title{
+  background-image:url('assets/v21/result-art/title-win.webp')!important;
+  background-size:100% 100%!important;color:transparent!important;
+  font-size:0!important;text-shadow:none!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-outcome="loss"] .cm-v21-head #finish-title{
+  background-image:url('assets/v21/result-art/title-loss.webp')!important;
+  background-size:100% 100%!important;color:transparent!important;
+  font-size:0!important;text-shadow:none!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-subtitle{
+  width:min(57vw,570px)!important;
+  height:clamp(30px,5.2dvh,48px)!important;
+  margin:-7px auto 0!important;padding:2px 8px!important;
+  background:transparent url('assets/v21/result/subtitle-empty.svg') center/100% 100% no-repeat!important;
+  letter-spacing:.07em!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result:not([data-cm-result-mode="practice"]) .cm-v21-subtitle{
+  background-image:url('assets/v21/result-art/subtitle.webp')!important;
+  background-size:100% 100%!important;
+  color:transparent!important;font-size:0!important;text-shadow:none!important;
+}
+/* As três molduras foram desenhadas para serem 2:3, jamais 600:840. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-stage{
+  align-items:center!important;justify-items:center!important;
+  grid-template-columns:minmax(0,1fr) minmax(390px,1.05fr) minmax(0,1fr)!important;
+  column-gap:clamp(3px,.8vw,12px)!important;
+  padding:0 2px!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player{
+  width:min(31vw,calc((100dvh - 220px)*.667),405px)!important;
+  height:auto!important;max-height:100%!important;
+  aspect-ratio:2/3!important;overflow:visible!important;
+  transform:scale(1.06)!important;transform-origin:center center!important;
+  background:none!important;border:0!important;box-shadow:none!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-crop{
+  left:17%!important;top:18.5%!important;width:66%!important;height:49%!important;
+  z-index:1!important;overflow:hidden!important;background:transparent!important;
+  border:0!important;box-shadow:none!important;border-radius:0!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-crop img{
+  display:block!important;width:100%!important;height:100%!important;
+  object-fit:cover!important;object-position:50% 15%!important;
+  transform:scale(1.12)!important;transform-origin:50% 27%!important;
+  filter:none!important;background:transparent!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-mirror .cm-v21-crop img{
+  transform:scaleX(-1) scale(1.12)!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-frame{
+  inset:0!important;width:100%!important;height:100%!important;object-fit:fill!important;
+  z-index:3!important;filter:drop-shadow(0 5px 7px #030e2c99)!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-crest{
+  display:none!important; /* As molduras PNG têm os brasões integrados. */
+}
+/* Identificação dentro das duas plaquetas originais, SEM caixas extras. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result :is(.cm-v21-name,.cm-v21-house){
+  left:9.5%!important;width:81%!important;max-width:81%!important;
+  padding:0 1px!important;overflow:hidden!important;
+  border:0!important;border-radius:0!important;background:none!important;
+  box-shadow:none!important;text-overflow:ellipsis!important;white-space:nowrap!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-name{
+  top:76.4%!important;height:5.9%!important;
+  color:#ffefc6!important;
+  font:900 clamp(11px,1.48vw,23px)/1.08 'Cinzel',Georgia,serif!important;
+  text-shadow:0 2px 3px #061329!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-house{
+  top:87.9%!important;height:4.8%!important;
+  color:#ffe19b!important;
+  font:900 clamp(7px,.91vw,12px)/1.08 'Nunito',Arial,sans-serif!important;
+  text-shadow:0 1px 3px #050d25!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player[data-house="C"] .cm-v21-name{
+  top:75.4%!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player[data-house="C"] .cm-v21-house{
+  top:87.5%!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-winner{
+  top:-4.5%!important;left:50%!important;width:70%!important;height:15%!important;
+  z-index:12!important;background-size:contain!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-winner[aria-label="VENCEDOR"]{
+  background-image:url('assets/v21/result-art/winner.webp')!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-winner[aria-label="VENCEDOR"] span{
+  display:none!important; /* texto já faz parte da insígnia */
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-winner[aria-label="EMPATE"]{
+  background-image:url('assets/v21/result-art/badge-draw.svg')!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-winner[aria-label="EMPATE"] span{display:none!important;}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-vs-art{
+  object-fit:contain!important;filter:drop-shadow(0 2px 7px #071833aa)!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-vs>span{
+  display:none!important; /* a arte VS já contém o lettering dourado */
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-vs{
+  width:clamp(80px,9vw,135px)!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-total{
+  color:#d6f3ff!important;
+  font:900 clamp(34px,5vw,81px)/1 'Cinzel',Georgia,serif!important;
+  text-shadow:0 1px 0 #fff,0 3px 3px #12518b,0 7px 11px #001329!important;
+}
+/* O jogo só mostra 42 VS 36; os cinco lançamentos seguem preservados nos dados. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-final-shots,
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-score-cell{
+  display:none!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .finish-actions button{
+  letter-spacing:0!important;
+}
+@media(max-width:760px){
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-head #finish-title{
+   width:95vw!important;height:clamp(57px,10.3dvh,90px)!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-subtitle{
+   width:min(87vw,475px)!important;height:clamp(26px,4dvh,36px)!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-stage{
+   grid-template-columns:repeat(2,minmax(0,1fr))!important;
+   grid-template-rows:minmax(0,1fr) auto!important;column-gap:2px!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player{
+   width:min(45vw,calc((100dvh - 305px)*.667),270px)!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-total{
+   font-size:clamp(25px,7.5vw,48px)!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-vs{
+   width:clamp(42px,10vw,70px)!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-name{
+   font-size:clamp(9px,2.25vw,16px)!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-house{
+   font-size:clamp(6px,1.34vw,10px)!important;
+ }
+}
+@media(max-height:520px) and (min-width:761px){
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-head #finish-title{height:11dvh!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-logo{height:4dvh!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-subtitle{height:4dvh!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player{
+   width:min(25vw,calc((100dvh - 170px)*.667),335px)!important;
+ }
+}
+
+
+/* V2.1 — refinamento final das artes de resultado (2026-11-09).
+   Banners originais recortados somente nas margens TRANSPARENTES.
+   A proporção é a da arte; não distorcer nem o fundo nem os personagens. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-logo{
+ display:none!important;
+}
+/* Vitória/Derrota (448 × 120 px) */
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-head #finish-title{
+ box-sizing:border-box!important;
+ width:min(36vw,465px)!important;
+ height:auto!important;
+ aspect-ratio:448 / 120!important;
+ min-height:0!important;max-height:none!important;
+ margin:0 auto!important;padding:0 12px!important;
+ background-position:center!important;
+ background-repeat:no-repeat!important;
+ background-size:contain!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-outcome="win"] .cm-v21-head #finish-title{
+ background-image:url('assets/v21/result-art/title-win-fitted.webp')!important;
+ background-size:100% 100%!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-outcome="loss"] .cm-v21-head #finish-title{
+ background-image:url('assets/v21/result-art/title-loss-fitted.webp')!important;
+ background-size:100% 100%!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-outcome="draw"] .cm-v21-head #finish-title{
+ background-image:url('assets/v21/result-art/title-draw.svg')!important;
+ background-size:100% 100%!important;
+ color:transparent!important;font-size:0!important;text-shadow:none!important;
+}
+/* Placa azul (363 × 53 px) */
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-subtitle{
+ box-sizing:border-box!important;
+ width:min(41vw,520px)!important;
+ height:auto!important;
+ aspect-ratio:363 / 53!important;
+ min-height:0!important;max-height:none!important;
+ margin:-4px auto 0!important;
+ padding:0 5px!important;
+ background-position:center!important;
+ background-repeat:no-repeat!important;
+ background-size:contain!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result:not([data-cm-result-mode="practice"]) .cm-v21-subtitle{
+ background-image:url('assets/v21/result-art/subtitle-fitted.webp')!important;
+ background-size:100% 100%!important;
+}
+/* Heróis maiores no vão interior sem aumentar nem espelhar a moldura. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-crop{
+ top:17.3%!important;left:15.7%!important;width:68.6%!important;height:52%!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-crop img{
+ transform:scale(1.19)!important;
+ transform-origin:50% 28%!important;
+ object-position:50% 15%!important;
+}
+/* A direita encara a esquerda — apenas o retrato, não o brasão ou as legendas. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player.cm-v21-facing-left .cm-v21-crop img,
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player.cm-v21-facing-left.cm-v21-mirror .cm-v21-crop img{
+ transform:scaleX(-1) scale(1.19)!important;
+ transform-origin:50% 28%!important;
+}
+/* Nome e turma/casa alinhados à área interna das plaquetas ilustradas. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player .cm-v21-name,
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player[data-house="C"] .cm-v21-name{
+ top:76.2%!important;height:5.9%!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player .cm-v21-house,
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player[data-house="C"] .cm-v21-house{
+ top:84.8%!important;height:4.9%!important;
+ font-size:clamp(8px,.88vw,12px)!important;
+}
+/* Azuis-safira mais escuros que a cachoeira, com contorno, relevo e brilho. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-total{
+ color:#84d8ff!important;
+ font:900 clamp(43px,6.55vw,100px)/1 'Cinzel',Georgia,serif!important;
+ -webkit-text-stroke:1.65px #073c79!important;
+ paint-order:stroke fill!important;
+ text-shadow:0 -1px 0 #edfdff,0 2px 1px #287ac5,0 4px 0 #0e488b,
+   0 8px 9px #00152f,0 0 17px #59baffbb!important;
+}
+@media(max-width:760px){
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-head #finish-title{
+  width:min(78vw,465px)!important;height:auto!important;aspect-ratio:448 / 120!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-subtitle{
+  width:min(86vw,520px)!important;height:auto!important;aspect-ratio:363 / 53!important;
+  margin:-3px auto 0!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-scores{gap:clamp(12px,3.2vw,20px)!important;max-width:min(94vw,340px)!important;}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-total{
+  font-size:clamp(30px,7.6vw,56px)!important;-webkit-text-stroke:1.15px #073c79!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player .cm-v21-house{
+  font-size:clamp(6px,1.52vw,10px)!important;
+ }
+}
+@media(max-height:540px) and (min-width:761px){
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-head #finish-title{
+  width:min(30vw,380px)!important;height:auto!important;aspect-ratio:448 / 120!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-subtitle{
+  width:min(36vw,470px)!important;height:auto!important;aspect-ratio:363 / 53!important;
+ }
+}
+
+/* Desafio enviado: título oficial fornecido, nunca texto estilizado ou a faixa antiga.
+   Restrito ao duelo online ainda sem pontuação adversária. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="duel"][data-cm-result-outcome="pending"] .cm-v21-head #finish-title{
+  display:block!important;
+  box-sizing:border-box!important;
+  width:min(82vw,680px)!important;
+  max-width:100%!important;
+  height:clamp(72px,14dvh,145px)!important;
+  min-height:0!important;
+  max-height:none!important;
+  aspect-ratio:auto!important;
+  margin:0 auto!important;
+  padding:0!important;
+  background-image:url('assets/ui/titles/titulo-desafio-enviado.png?v=20261112-oficial')!important;
+  background-position:center!important;
+  background-size:contain!important;
+  background-repeat:no-repeat!important;
+  border:0!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+  outline:0!important;
+  font-size:0!important;
+  line-height:0!important;
+  color:transparent!important;
+  text-shadow:none!important;
+  overflow:hidden!important;
+}
+
+
+/* V19 — Resultado exclusivo do ROBÔ nos treinos Fácil, Médio e Difícil.
+   Reutiliza os mesmos arquivos da carta pré-duelo; protege as três casas. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-player.cm-v21-robot[data-house="ROBOT"] .cm-v21-frame{
+ display:block!important;
+ width:100%!important;height:100%!important;inset:0!important;
+ object-fit:fill!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-player.cm-v21-robot .cm-v21-crop{
+ top:14.5%!important;left:13%!important;width:74%!important;height:55%!important;
+ background:radial-gradient(ellipse at center,#12689c47,#06163326 65%,transparent)!important;
+ border:0!important;overflow:hidden!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-player.cm-v21-robot .cm-v21-crop img{
+ width:100%!important;height:100%!important;
+ object-fit:contain!important;object-position:center center!important;
+ transform:scale(1.13)!important;transform-origin:50% 50%!important;
+ background:transparent!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-player.cm-v21-robot.cm-v21-facing-left .cm-v21-crop img{
+ transform:scaleX(-1) scale(1.13)!important;transform-origin:50% 50%!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-player.cm-v21-robot .cm-v21-name{
+ top:75.6%!important;height:6.6%!important;left:10%!important;width:80%!important;
+ color:#eafaff!important;text-shadow:0 2px 4px #000d!important;
+ font-size:clamp(11px,1.45vw,21px)!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-player.cm-v21-robot .cm-v21-house{
+ top:87.2%!important;height:5.2%!important;left:12%!important;width:76%!important;
+ color:#c7efff!important;text-shadow:0 2px 4px #000c!important;
+ font-size:clamp(7px,.88vw,12px)!important;
+}
+
+
+/* V20 — Somente espaçamento: mantém exatamente a fonte/tamanho original do placar.
+   Os três níveis do treino usam a mesma tela de resultado. */
+@media(min-width:761px){
+ body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-stage{
+  width:min(100%,1530px)!important;max-width:1530px!important;
+  grid-template-columns:minmax(0,1fr) clamp(410px,29vw,500px) minmax(0,1fr)!important;
+  column-gap:clamp(15px,1.6vw,30px)!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-scores{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) clamp(85px,7vw,115px) minmax(0,1fr)!important;
+  gap:clamp(6px,.8vw,14px)!important;
+  align-items:center!important;justify-items:center!important;
+  width:100%!important;max-width:100%!important;min-width:0!important;
+  margin:0!important;padding:0!important;
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-total{
+  box-sizing:border-box!important;display:block!important;
+  width:100%!important;max-width:100%!important;min-width:0!important;
+  margin:0!important;padding:0!important;
+  text-align:center!important;white-space:nowrap!important;
+  /* Sem font-size: preserva o tamanho do placar já aprovado. */
+ }
+ body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-vs{
+  width:100%!important;max-width:115px!important;min-width:0!important;
+ }
+}
+/* Em telas estreitas, o placar já ocupa sua própria linha abaixo das cartas. */
+@media(max-width:760px){
+ body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-scores{
+  width:min(100%,420px)!important;max-width:420px!important;
+  margin:0 auto!important;padding:0!important;
+  gap:clamp(8px,2vw,20px)!important;
+ }
+}
+
+
+/* V21 — Resultado contra o robô, três dificuldades.
+   Conserva tamanho do placar e das molduras: desloca a carta esquerda
+   e melhora o enquadramento individual dos sprites, não da moldura. */
+@media(min-width:761px){
+ body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-stage > .cm-v21-player:first-child{
+  transform:translateX(-34px) scale(1.06)!important;
+  transform-origin:center center!important;
+ }
+}
+/* Retrato do aluno: janela interior mais ampla, sem zoom que corta flecha/túnica. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-stage > .cm-v21-player:first-child .cm-v21-crop{
+ left:10.5%!important;top:14.9%!important;
+ width:79%!important;height:55.5%!important;
+ overflow:hidden!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-stage > .cm-v21-player:first-child .cm-v21-crop img{
+ object-fit:contain!important;object-position:50% 50%!important;
+ transform:scale(1.09)!important;transform-origin:center center!important;
+}
+/* Robô cerca de 5% maior, com as pernas ocultas pela placa inferior original. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-player.cm-v21-robot .cm-v21-crop{
+ top:14.5%!important;height:54.5%!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-player.cm-v21-robot .cm-v21-crop img{
+ transform:scale(1.19)!important;transform-origin:50% 42%!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-player.cm-v21-robot.cm-v21-facing-left .cm-v21-crop img{
+ transform:scaleX(-1) scale(1.19)!important;transform-origin:50% 42%!important;
+}
+@media(max-width:760px){
+ body[data-page="arena"] #view-arena #finish.cm-v21-result[data-cm-result-mode="bot"] .cm-v21-stage > .cm-v21-player:first-child{
+  transform:scale(1.06)!important;
+ }
+}

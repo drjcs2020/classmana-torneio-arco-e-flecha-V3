@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="127" viewBox="0 0 380 127" role="img" aria-label="EMPATE">
+<defs>
+<linearGradient id="gold" x2="0" y2="1"><stop stop-color="#fff7a8"/><stop offset=".17" stop-color="#ffe37b"/><stop offset=".39" stop-color="#f8b83f"/><stop offset=".55" stop-color="#fff0a0"/><stop offset=".76" stop-color="#c77817"/><stop offset="1" stop-color="#ffe680"/></linearGradient>
+<linearGradient id="wine" x2="0" y2="1"><stop stop-color="#3a0619"/><stop offset=".23" stop-color="#690a35"/><stop offset=".53" stop-color="#9a174f"/><stop offset=".77" stop-color="#5a092a"/><stop offset="1" stop-color="#290719"/></linearGradient>
+<linearGradient id="blue" x2="0" y2="1"><stop stop-color="#4feaff"/><stop offset=".43" stop-color="#0062bb"/><stop offset="1" stop-color="#041e6b"/></linearGradient>
+<filter id="shadow" x="-20%" y="-35%" width="140%" height="170%"><feDropShadow dx="0" dy="7" stdDeviation="4" flood-color="#110008" flood-opacity=".9"/></filter>
+<filter id="letters"><feDropShadow dx="0" dy="3" stdDeviation="1.4" flood-color="#1e020c" flood-opacity=".95"/></filter>
+</defs>
+<path d="M30 45 L10 62 L33 79 L29 98 Q80 84 118 98 L262 98 Q310 84 351 98 L347 79 L370 62 L350 45 Q301 51 267 43 L113 43 Q75 51 30 45Z" fill="url(#wine)" stroke="#8b3d0e" stroke-width="7" filter="url(#shadow)"/>
+<path d="M30 45 L10 62 L33 79 L29 98 Q80 84 118 98 L262 98 Q310 84 351 98 L347 79 L370 62 L350 45 Q301 51 267 43 L113 43 Q75 51 30 45Z" fill="none" stroke="url(#gold)" stroke-width="4"/>
+<path d="M56 36 Q190 22 324 36 L332 98 Q190 113 48 98Z" fill="url(#wine)" stroke="#7a310e" stroke-width="10"/>
+<path d="M56 36 Q190 22 324 36 L332 98 Q190 113 48 98Z" fill="none" stroke="url(#gold)" stroke-width="6"/>
+<path d="M190 6 L209 27 L190 43 L171 27 Z" fill="url(#gold)" stroke="#844111" stroke-width="3"/>
+<path d="M190 14 L203 27 L190 38 L177 27 Z" fill="url(#blue)" stroke="#ffea96" stroke-width="2"/>
+<path d="M57 56 Q82 44 102 50 M323 56 Q298 44 278 50" fill="none" stroke="#fff2b6" stroke-width="2"/>
+<text x="190" y="86" text-anchor="middle" font-family="Georgia,Times New Roman,serif" font-size="52" font-weight="900" letter-spacing="2" fill="#34040f" stroke="#47120b" stroke-width="9" paint-order="stroke fill" filter="url(#letters)">EMPATE</text>
+<text x="190" y="83" text-anchor="middle" font-family="Georgia,Times New Roman,serif" font-size="52" font-weight="900" letter-spacing="2" fill="url(#gold)" stroke="#82320d" stroke-width="2.7" paint-order="stroke fill">EMPATE</text>
+</svg>

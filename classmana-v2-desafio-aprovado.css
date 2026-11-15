@@ -1,0 +1,380 @@
+/* ClassMana — Escolha do Desafio, composição aprovada.
+   Escopo exclusivo: etapa desafio. Mantém funções do game-v3.js e fundo da arena. */
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options.cm-challenge-approved{
+ position:absolute!important;left:9%!important;right:9%!important;top:19%!important;bottom:2%!important;
+ z-index:5!important;display:flex!important;flex-direction:column!important;align-items:center!important;
+ gap:clamp(4px,.7vh,9px)!important;padding:0!important;min-height:0!important;
+ background:transparent!important;border:0!important;box-shadow:none!important;overflow:visible!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-duel-title{
+ display:block!important;flex:0 0 clamp(48px,9vh,86px)!important;
+ height:clamp(48px,9vh,86px)!important;width:min(72%,580px)!important;max-width:100%!important;
+ margin:0 auto!important;object-fit:contain!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-duel-modes{
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ grid-template-rows:minmax(0,1.65fr) minmax(0,1fr)!important;
+ width:min(100%,1140px)!important;max-width:1140px!important;min-height:0!important;
+ flex:1 1 auto!important;gap:clamp(7px,1.2vh,13px)!important;
+ padding:0!important;margin:0 auto!important;
+ align-items:stretch!important;justify-items:stretch!important;
+ background:transparent!important;border:0!important;box-shadow:none!important;
+}
+/* Destaque principal com três imagens oficiais das casas. */
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-duel-panel{
+ grid-column:1/-1!important;grid-row:1!important;
+ position:relative!important;box-sizing:border-box!important;min-height:0!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;
+ padding:clamp(7px,1.1vh,13px) clamp(12px,2vw,28px) clamp(5px,.7vh,9px)!important;
+ border:4px ridge #ffd56d!important;border-radius:clamp(16px,2vw,27px)!important;
+ background:linear-gradient(115deg,#082d63ef 0%,#4c0918f2 45%,#062f22f2 100%)!important;
+ box-shadow:inset 0 0 0 2px #e7ad48,0 0 18px #ffca6a82,0 7px 18px #0009!important;
+ overflow:hidden!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-duel-ribbon{
+ display:block!important;position:relative!important;z-index:2!important;
+ width:min(78%,690px)!important;height:clamp(42px,9vh,90px)!important;max-width:100%!important;
+ flex:0 0 clamp(42px,9vh,90px)!important;object-fit:contain!important;
+ margin:-7px auto -5px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-duel-mascots{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ flex:1 1 auto!important;width:100%!important;min-height:0!important;gap:clamp(8px,1.3vw,18px)!important;
+ align-items:stretch!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-mascot{
+ position:relative!important;min-width:0!important;min-height:0!important;overflow:hidden!important;
+ border:2px solid #e8c271!important;border-radius:12px!important;
+ box-shadow:inset 0 0 14px #ffe5aa3d,0 0 9px #0006!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-mascot-a{background:linear-gradient(150deg,#0c57ad,#041c43)!important}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-mascot-b{background:linear-gradient(150deg,#b62624,#4e0913)!important}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-mascot-c{background:linear-gradient(150deg,#168f50,#032f1c)!important}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-mascot > img:first-child{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ display:block!important;object-fit:cover!important;object-position:center 48%!important;
+ filter:saturate(1.17) contrast(1.07)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-mascot > img.cm-house-mascot-crest{
+ display:block!important;position:absolute!important;bottom:2px!important;right:2px!important;
+ z-index:2!important;width:clamp(32px,4.5vw,65px)!important;height:clamp(32px,4.5vw,65px)!important;
+ object-fit:contain!important;filter:drop-shadow(0 2px 7px #000a)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-start{
+ flex:0 0 clamp(49px,8vh,75px)!important;width:min(55%,480px)!important;height:clamp(49px,8vh,75px)!important;
+ position:relative!important;z-index:3!important;box-sizing:border-box!important;
+ display:block!important;border:0!important;padding:0!important;margin:-4px auto 0!important;
+ background:transparent!important;box-shadow:none!important;cursor:pointer!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-start img{
+ display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;
+}
+/* Alternativas inferiores, igualmente acessíveis, mas visivelmente secundárias. */
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-secondary{
+ position:relative!important;box-sizing:border-box!important;min-width:0!important;min-height:0!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:space-between!important;
+ padding:clamp(8px,1.2vh,14px)!important;overflow:hidden!important;
+ border:3px solid #e4b853!important;border-radius:18px!important;
+ box-shadow:inset 0 0 0 1px #ffeb9d85,0 6px 14px #000a!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-robot{
+ grid-column:1!important;grid-row:2!important;
+ background:linear-gradient(130deg,#072b62f2,#096bb4e8 48%,#041e51f7)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-students{
+ grid-column:2!important;grid-row:2!important;
+ background:linear-gradient(130deg,#043822f2,#07833ee8 48%,#033e20f7)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-secondary-heading{
+ display:flex!important;flex-wrap:wrap!important;align-items:baseline!important;justify-content:center!important;
+ gap:clamp(4px,.65vw,10px)!important;width:100%!important;text-align:center!important;
+ font:900 clamp(17px,2.2vw,30px)/1.1 Georgia,serif!important;color:#fff4c9!important;
+ text-shadow:0 3px 4px #000!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-secondary-heading small{
+ font:700 clamp(10px,.9vw,13px)/1.2 Nunito,sans-serif!important;color:#dceeff!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-robot-levels{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ align-items:end!important;gap:clamp(4px,.7vw,11px)!important;
+ width:100%!important;min-height:0!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-robot-levels button{
+ display:block!important;min-width:0!important;width:100%!important;height:clamp(42px,7vh,67px)!important;
+ border:0!important;background:transparent!important;padding:0!important;cursor:pointer!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-robot-levels button img{
+ display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-students h3{
+ font:900 clamp(18px,2.1vw,30px)/1.1 Georgia,serif!important;
+ text-shadow:0 3px 4px #000!important;color:#fff0bc!important;margin:0!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-archers{
+ width:100%!important;flex:1 1 auto!important;min-height:0!important;
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:4px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-archers img{
+ min-height:0!important;max-height:100%!important;width:100%!important;height:100%!important;
+ object-fit:contain!important;object-position:center bottom!important;filter:drop-shadow(0 3px 5px #000a)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-student-actions{
+ flex:0 0 auto!important;display:flex!important;align-items:center!important;justify-content:center!important;
+ width:100%!important;gap:9px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-student-actions button{
+ min-width:0!important;flex:1 1 0!important;max-width:220px!important;
+ min-height:clamp(27px,4.5vh,40px)!important;cursor:pointer!important;
+ border:2px solid #f7d46a!important;border-radius:9px!important;
+ background:linear-gradient(#1a9455,#075634)!important;color:#fff7c8!important;
+ font:900 clamp(11px,1vw,15px)/1 Georgia,serif!important;text-shadow:0 2px 3px #000!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-ranking{
+ position:absolute!important;right:-5%!important;top:-2%!important;z-index:4!important;
+ display:flex!important;align-items:center!important;gap:3px!important;
+ width:auto!important;height:auto!important;padding:5px 11px!important;
+ border:2px solid #e8b55a!important;border-radius:12px!important;
+ background:#081a3bdc!important;color:#ffedbc!important;font:900 12px Georgia,serif!important;cursor:pointer!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options button:hover{
+ filter:brightness(1.16) drop-shadow(0 0 5px #f5d06f70)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options button:focus-visible{
+ outline:3px solid #fff4ad!important;outline-offset:2px!important;
+}
+@media(max-width:780px){
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options.cm-challenge-approved{
+  top:16%!important;left:3%!important;right:3%!important;bottom:2%!important;gap:3px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-duel-title{
+  flex-basis:48px!important;height:48px!important;width:80%!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-duel-modes{
+  grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(0,1.3fr) minmax(0,.85fr) minmax(0,.85fr)!important;
+  gap:5px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-duel-panel{grid-column:1!important;grid-row:1!important;padding:4px 7px!important}
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-duel-ribbon{height:38px!important;flex-basis:38px!important}
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-start{flex-basis:43px!important;height:43px!important;width:72%!important}
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-robot{grid-column:1!important;grid-row:2!important}
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-students{grid-column:1!important;grid-row:3!important}
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-secondary{padding:4px 7px!important}
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-ranking{right:0!important;top:0!important;font-size:10px!important}
+}
+
+
+/* Botões individuais das modalidades de desafio: cada imagem é seu próprio controle. */
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-student-actions{
+ flex:0 0 clamp(39px,6vh,59px)!important;
+ gap:clamp(7px,1.1vw,16px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-student-actions button{
+ flex:1 1 0!important;display:block!important;width:100%!important;max-width:260px!important;
+ height:100%!important;min-height:0!important;padding:0!important;margin:0!important;
+ border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;
+ overflow:visible!important;cursor:pointer!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-student-actions button img{
+ display:block!important;object-fit:contain!important;width:100%!important;height:100%!important;
+ filter:drop-shadow(0 3px 5px #001b0ab0)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-student-actions button:hover img,
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-student-actions button:focus-visible img{
+ filter:brightness(1.12) drop-shadow(0 0 7px #f7d76b)!important;
+}
+/* As três casas não devem ter brasões sobrepostos às artes dos mascotes. */
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-mascot-crest{
+ display:none!important;
+}
+
+
+/* RECOMPOSIÇÃO VISUAL 2026-11-11: preservar as rotas do jogo, corrigir escala e cenários.
+   Os mascotes são apresentados em close pelas imagens já presentes no repositório:
+   não mostrar a parte de castelo nem sobrepor brasões. */
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options.cm-challenge-approved{
+ top:19%!important;bottom:1.2%!important;left:8%!important;right:8%!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-duel-modes{
+ width:100%!important;max-width:1210px!important;gap:clamp(7px,1vh,11px)!important;
+ grid-template-rows:minmax(0,1.65fr) minmax(0,1fr)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-duel-panel{
+ background:radial-gradient(ellipse at 50% 78%,#f68516dc 0%,#7b1713ef 36%,#300918f7 75%,#120715fa 100%)!important;
+ border:5px ridge #ffcf5c!important;border-radius:26px 26px 32px 32px!important;
+ box-shadow:inset 0 0 0 2px #ffe18e,0 0 0 2px #713c15,0 0 24px #ffb3419a,0 9px 20px #0009!important;
+ padding:1px clamp(10px,1.3vw,21px) 3px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-duel-ribbon{
+ flex:0 0 clamp(50px,8vh,75px)!important;height:clamp(50px,8vh,75px)!important;
+ width:min(78%,760px)!important;max-width:760px!important;z-index:4!important;
+ margin:-3px auto -10px!important;filter:drop-shadow(0 5px 5px #1a0603)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-duel-mascots{
+ flex:1 1 auto!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+ gap:0!important;width:100%!important;min-height:0!important;overflow:hidden!important;
+ border:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-mascot{
+ overflow:hidden!important;min-height:0!important;border:0!important;border-radius:0!important;
+ box-shadow:none!important;position:relative!important;isolation:isolate!important;
+ background-repeat:no-repeat!important;background-size:220% 165%!important;
+ mask-image:linear-gradient(to right,transparent 0%,#000 13%,#000 88%,transparent 100%)!important;
+ -webkit-mask-image:linear-gradient(to right,transparent 0%,#000 13%,#000 88%,transparent 100%)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-mascot-a{
+ background-image:url('assets/kingdoms/aguia-castelo-mascote.webp')!important;
+ background-position:left 43%!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-mascot-b{
+ background-image:url('assets/kingdoms/leao-castelo-mascote.webp')!important;
+ background-position:right 42%!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-mascot-c{
+ background-image:url('assets/kingdoms/dragao-castelo-mascote.webp')!important;
+ background-position:right 38%!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-start{
+ display:block!important;flex:0 0 clamp(65px,10vh,92px)!important;
+ height:clamp(65px,10vh,92px)!important;width:min(42%,420px)!important;min-width:240px!important;
+ margin:-9px auto -4px!important;z-index:6!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-start img{
+ width:100%!important;height:100%!important;object-fit:fill!important;
+ filter:drop-shadow(0 4px 7px #020a02)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-secondary{
+ border:4px ridge #ffcd68!important;border-radius:17px!important;
+ padding:clamp(5px,.85vh,9px)!important;
+ box-shadow:inset 0 0 0 2px #fff1b768,0 0 0 1px #57311a,0 0 14px #edb34780!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-robot{
+ background:radial-gradient(ellipse at 27% 55%,#0775d4 0%,#0d438e 43%,#06245b 85%)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-robot-art{
+ position:absolute!important;left:0!important;top:5%!important;width:35%!important;height:89%!important;
+ object-fit:contain!important;object-position:center!important;z-index:2!important;pointer-events:none!important;
+ filter:drop-shadow(0 0 9px #2de9ff8f)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-robot .cm-challenge-secondary-heading{
+ display:block!important;width:66%!important;align-self:flex-end!important;
+ font:900 clamp(21px,2.75vw,38px)/1.05 Georgia,serif!important;text-align:center!important;
+ color:#fff6d1!important;text-shadow:1px 3px 1px #58320e,0 4px 6px #000!important;
+ z-index:3!important;margin-top:clamp(5px,2vh,20px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-robot-levels{
+ position:absolute!important;left:1.5%!important;right:1.5%!important;bottom:3%!important;
+ width:97%!important;z-index:4!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-robot-levels button{
+ height:clamp(36px,6.3vh,57px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-students{
+ background:radial-gradient(ellipse at 50% 48%,#08773b 0%,#03542d 60%,#002c1b 100%)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-students h3{
+ position:relative!important;z-index:3!important;
+ font:900 clamp(21px,2.55vw,35px)/1 Georgia,serif!important;
+ text-shadow:1px 3px 0 #58320e,0 4px 6px #000!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-archers{
+ display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:0!important;
+ position:absolute!important;top:19%!important;bottom:16%!important;left:3%!important;right:3%!important;
+ width:94%!important;min-height:0!important;overflow:visible!important;align-items:end!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-archers img{
+ display:block!important;width:100%!important;height:100%!important;
+ max-height:none!important;object-fit:contain!important;object-position:center bottom!important;
+ transform:scale(1.46)!important;transform-origin:center bottom!important;
+ filter:drop-shadow(0 3px 5px #000a)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-student-actions{
+ position:absolute!important;bottom:2%!important;left:3%!important;width:94%!important;
+ z-index:5!important;height:clamp(38px,6.5vh,54px)!important;flex:0 0 auto!important;
+}
+@media(max-width:780px){
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options.cm-challenge-approved{left:2%!important;right:2%!important;top:16%!important;bottom:1%!important}
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-duel-modes{grid-template-rows:minmax(0,1.3fr) minmax(0,.8fr) minmax(0,.8fr)!important}
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-house-start{height:48px!important;min-width:180px!important;flex-basis:48px!important}
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-challenge-archers img{transform:scale(1.18)!important}
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] #duel-options .cm-robot-levels button{height:37px!important}
+}
+
+/* ClassMana — escolha de colega da MESMA turma (sem alterar outras modalidades) */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel {
+ width:min(100%,1040px)!important; margin-inline:auto!important;
+ display:flex!important;flex-direction:column!important;align-items:center!important;
+ gap:18px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-v2-challenge-picker,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .setup-head,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .course-preview,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .setup-fields,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .online-account > div:first-child {
+ display:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .online-account{
+ align-self:stretch!important;justify-content:flex-end!important;
+ margin:0!important;padding:0 10px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-house-duel:not([hidden]){
+ box-sizing:border-box!important;
+ display:grid!important;grid-template-columns:minmax(170px,235px) minmax(0,1fr)!important;
+ align-items:center!important;gap:clamp(18px,3vw,40px)!important;
+ width:min(100%,900px)!important;
+ padding:clamp(25px,3.6vw,45px)!important;
+ background:linear-gradient(145deg,rgba(8,33,67,.97),rgba(6,23,50,.97))!important;
+ border:3px solid #dfb75b!important;border-radius:24px!important;
+ box-shadow:0 15px 38px #0008,inset 0 0 0 2px #fff2b51a!important;
+ color:#ffefd0!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-house-crest-wrap{
+ display:flex!important;justify-content:center!important;align-items:center!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-crest{
+ display:block!important;width:min(100%,220px)!important;max-height:255px!important;
+ object-fit:contain!important;filter:drop-shadow(0 10px 18px #000a)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-house-main{min-width:0!important}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-house-kicker{
+ display:block!important;color:#e6bd68!important;font:800 12px Nunito,sans-serif!important;
+ letter-spacing:.17em!important;margin-bottom:7px!important
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-title{
+ margin:0 0 12px!important;color:#ffe3a0!important;
+ font:900 clamp(22px,3vw,37px)/1.13 Cinzel,Georgia,serif!important;text-shadow:0 3px 5px #0008!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-description{
+ margin:0 0 24px!important;color:#f2e9da!important;font:700 clamp(14px,1.4vw,17px)/1.5 Nunito,sans-serif!important
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-select-slot #rival-label{
+ display:flex!important;flex-direction:column!important;gap:9px!important;
+ width:100%!important;margin:0!important;padding:0!important;
+ color:#ffdfa0!important;font:900 17px Nunito,sans-serif!important;
+ background:none!important;border:0!important;box-shadow:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-select-slot #rival{
+ display:block!important;box-sizing:border-box!important;width:100%!important;
+ min-height:57px!important;padding:10px 17px!important;
+ border:2px solid #e4bb65!important;border-radius:12px!important;
+ background:#f9eed0!important;color:#142944!important;
+ font:800 clamp(15px,1.55vw,19px) Nunito,sans-serif!important;
+ cursor:pointer!important;box-shadow:0 5px 0 #634821!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-select-slot #rival-label small{
+ display:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-house-note{
+ margin:17px 0 0!important;color:#bde5ff!important;font:800 13px Nunito,sans-serif!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #start-game{
+ align-self:center!important;margin:0 auto 22px!important;
+}
+@media(max-width:680px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-house-duel:not([hidden]){
+  grid-template-columns:1fr!important;text-align:center!important;gap:12px!important;padding:24px 18px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-crest{
+  width:130px!important;max-height:150px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-select-slot #rival-label{text-align:left!important}
+}

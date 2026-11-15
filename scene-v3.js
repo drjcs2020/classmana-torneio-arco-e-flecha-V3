@@ -1,0 +1,1058 @@
+/**
+ * ClassMana • Arena V3 — first-person archery scene.
+ * PlayCanvas 2.23+ (WebGL) with visual fallback when CDN/WebGL is unavailable.
+ * The scenic backgrounds come from the user's own Batalha dos Monstros V2.5 repository.
+ * All interactive entities are actual 3D meshes; bow, string, sight, projectile and target
+ * are independent objects so the same arrow can serve the three Houses.
+ */
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const palettes = {
+  A:{body:'#2566bf',trim:'#f4c65d',beam:'#795223',glow:'#b7dbff'},
+  B:{body:'#a32218',trim:'#ffd06e',beam:'#543329',glow:'#ff9b45'},
+  C:{body:'#107a53',trim:'#bedcce',beam:'#4d4836',glow:'#84ffb3'}
+};
+const rgb = h => [1,3,5].map(i => parseInt(h.slice(i, i+2), 16) / 255);
+
+import {GEAR_BY_ID,modelSource} from './equipment-catalog.js?v=arsenal-5';
+import {mediumTwinTargets} from './arena-difficulty.js?v=20261112-score-rollback-v1';
+export function initScene(canvas, getSettings) {
+  const parent=canvas.parentElement;
+  let pc=null, app=null, gl=null, camera=null, bowRoot=null, bowVisualPivot=null, bowFallbackRoot=null, bowHandle=null, bowString=null, sightAnchor=null,
+      arrowLoaded=null, targetRoot=null, impactMarks=[], currentHouse='A', ready=false, destroyed=false,
+      aimX=.5, aimY=.46, power=.3, projectile=null, pendingShot=null, animT=0,
+      equipment={bow:'classico',arrow:'rubi'},opponentReplayTarget=null,opponentImpactStart=0,opponentHiddenMarks=[],terrainElement=null,ambientProps=[],backdropMode=false,targetStand=null,movingRail=null,targetVisual=null,dualDiscs=[],dualProcedural=null,modelAssets={},modelLoads={},targetModelKey='';
+  // O fallback 2D não pode aparecer antes do PlayCanvas: antes ele causava a
+  // troca perceptível de arte após alguns segundos.
+  const ctx=canvas.getContext('2d', {alpha:true});
+  canvas.style.opacity='0';
+  parent.dataset.sceneEngine='loading';
+  const state={kind:'PlayCanvas + fundo modular',setHouse,setEquipment,setTargetShift,setAim,setPower,setBackdropMode,
+    getTargetMetrics, getAimPoint, fire, impact, beginOpponentReplay, endOpponentReplay, destroy};
+  // Diagnóstico apenas durante testes (?qa=1), sem controles visíveis no jogo.
+  if(new URLSearchParams(location.search).has('qa'))parent.cmAimDiagnostic=()=>({
+   kind:state.kind,input:{x:aimX,y:aimY},projected:getAimPoint()
+  });
+  const root=()=>app.root;
+  const canvasSize=()=>({w:parent.clientWidth||1050,h:parent.clientHeight||540});
+
+  function targetScale(distance){
+    return clamp(Math.pow(30/Math.max(10,distance||30),.65),.31,1.10);
+  }
+  function getTargetMetrics(){
+    const {w,h}=canvasSize(),s=getSettings()||{},distance=s.distance||25,shift=s.shift||0;
+    if(ready&&targetRoot)moveTarget();
+    if(ready&&camera?.camera&&targetRoot&&gl){
+      const scaled=targetRoot.getLocalScale().x;
+      const center=targetRoot.getPosition().clone().add(new pc.Vec3(0,0,.052*scaled));
+      const a=camera.camera.worldToScreen(center);
+      const b=camera.camera.worldToScreen(center.clone().add(new pc.Vec3(1.34*scaled,0,0)));
+      // PlayCanvas worldToScreen usa PIXELS CSS do canvas, não o buffer WebGL.
+      const kx=w/(gl.clientWidth||w),ky=h/(gl.clientHeight||h),r=Math.abs(b.x-a.x)*kx;
+      if(Number.isFinite(a.x)&&Number.isFinite(a.y)&&r>0)return {x:a.x*kx,y:a.y*ky,r};
+    }
+    const r=Math.min(h*.105,w*.082)*targetScale(distance);
+    const moving=s.level==='avancado'||s.level==='lendario';
+    const meters=clamp(Number(distance)||10,10,150);
+    const footY=h*(.65+.28*Math.pow((150-meters)/140,2.1));
+    return {x:w*(.50+shift),
+      y:moving?h*(.45+(s.verticalShift||0)):footY-1.48*r,r};
+  }
+  function fallbackSightGeometry(){
+    const {w,h}=canvasSize(),size=h*.76;
+    const offset=Math.min(w*.085,Math.max(0,(1-aimX)*w-65));
+    // Fallback também segue o ponteiro, sem deixar o arco parado na direita.
+    const bx=w*aimX+offset,by=h*aimY+size*.035;
+    return {bx,by,size,sightX:w*aimX,sightY:h*aimY};
+  }
+  function getAimPoint(){
+    // Referência da V1: o disparo usa o centro projetado da mira física.
+    if(ready&&sightAnchor&&camera?.camera&&gl){
+      updateBowAim();
+      const p=camera.camera.worldToScreen(sightAnchor.getPosition());
+      const width=gl.clientWidth||canvasSize().w,height=gl.clientHeight||canvasSize().h;
+      if(Number.isFinite(p.x)&&Number.isFinite(p.y)&&width>0&&height>0)
+        return {x:clamp(p.x/width,0,1),y:clamp(p.y/height,0,1)};
+    }
+    return {x:aimX,y:aimY};
+  }
+  function bowPalette(){
+    const base=palettes[currentHouse];
+    if(equipment.bow==='real')return {...base,body:'#543527',trim:'#f6c14f'};
+    if(equipment.bow==='vento')return {...base,body:'#4d899c',trim:'#d7edf2'};
+    return base;
+  }
+  function arrowPalette(){
+    if(equipment.arrow==='esmeralda')return {feather:'#22b78c',secondary:'#b5f9d8'};
+    if(equipment.arrow==='solar')return {feather:'#e2a720',secondary:'#fff2a1'};
+    return {feather:'#e44037',secondary:'#faf0db'};
+  }
+  function setEquipment(next={}){
+    const bow=GEAR_BY_ID[next.bow]?next.bow:'classico',
+      arrow=['rubi','esmeralda','solar'].includes(next.arrow)?next.arrow:'rubi';
+    if(bow===equipment.bow&&arrow===equipment.arrow)return;
+    const rebuild=bow!==equipment.bow;equipment={bow,arrow};
+    if(ready&&rebuild&&bowRoot){
+      // Como na V1, o projétil voa independente do arco.
+      if(pendingShot){pendingShot.done?.();pendingShot=null;}
+      projectile?.destroy();projectile=null;
+      sightAnchor?.destroy();sightAnchor=null;
+      bowRoot.destroy();bowRoot=null;bowVisualPivot=null;bowFallbackRoot=null;bowString=null;arrowLoaded=null;
+      buildBow();
+    }
+    if(ready)colorBow();
+  }
+  function setHouse(k){currentHouse=palettes[k]?k:'A';parent.classList.remove('house-a','house-b','house-c');parent.classList.add('house-'+currentHouse.toLowerCase());
+    if(ready){colorBow();colorTarget();}}
+  function setTargetShift(){if(ready){moveTarget();loadTargetModel();for(const old of impactMarks)old.destroy();impactMarks=[];}}
+  // A reprodução do adversário utiliza o MESMO alvo 3D real. Só sua posição
+  // é temporariamente reconstituída: não são criados discos HTML ou cópias
+  // artificiais e o arco, a flecha, a mira e a física continuam intactos.
+  function beginOpponentReplay(center){
+    if(!center||!Number.isFinite(center.x)||!Number.isFinite(center.y))return false;
+    opponentImpactStart=impactMarks.length;
+    opponentHiddenMarks=impactMarks.filter(mark=>mark&&mark.enabled);
+    for(const mark of opponentHiddenMarks)mark.enabled=false;
+    opponentReplayTarget={x:clamp(center.x,.08,.92),y:clamp(center.y,.14,.86)};
+    if(ready)moveTarget();
+    parent.dataset.opponentReplayTarget='real-3d';
+    return true;
+  }
+  function endOpponentReplay(){
+    // A flecha do adversário não deve permanecer cravada no alvo do aluno.
+    for(const mark of impactMarks.splice(opponentImpactStart))mark?.destroy();
+    for(const mark of opponentHiddenMarks)if(mark&&!mark._destroyed)mark.enabled=true;
+    opponentHiddenMarks=[];
+    opponentReplayTarget=null;
+    parent.dataset.opponentReplayTarget='off';
+    if(ready)moveTarget();
+  }
+  // Keep the bow, arrow and the bow's own sight fully inside the camera.
+  // Moving the mouse to the edge must not push the bow out of the viewport.
+  function setAim(x=.5,y=.46){
+    aimX=clamp(x,.06,.94);aimY=clamp(y,.08,.92);
+    updateBowAim();
+  }
+  function setPower(value){power=clamp(value,0,1);}
+  function setBackdropMode(value){
+    backdropMode=Boolean(value);
+    if(terrainElement)terrainElement.enabled=!backdropMode;
+    for(const prop of ambientProps)prop.enabled=!backdropMode;
+  }
+  function destroy(){destroyed=true;opponentReplayTarget=null;if(app){app.destroy();app=null;}gl?.remove();}
+
+  // -------- VISUAL FALLBACK: uses art backgrounds, painted metal bow and target. --------
+  function roundrect(c,x,y,w,h,r){c.beginPath();c.roundRect(x,y,w,h,r);}
+  function renderFallback(time){
+    if(destroyed||ready)return;
+    const {w,h}=canvasSize(),dpr=Math.min(2,devicePixelRatio||1),dw=Math.round(w*dpr),dh=Math.round(h*dpr);
+    if(canvas.width!==dw||canvas.height!==dh){canvas.width=dw;canvas.height=dh;}
+    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
+    const p=bowPalette(),m=getTargetMetrics();
+    // A perspective firing lane, scenic image stays visible around it.
+    const grass=ctx.createLinearGradient(0,h*.59,0,h);
+    grass.addColorStop(0,'rgba(25,88,45,.10)');grass.addColorStop(.6,'rgba(23,70,35,.29)');grass.addColorStop(1,'rgba(12,46,25,.62)');
+    ctx.fillStyle=grass;ctx.beginPath();ctx.moveTo(w*.45,h*.64);ctx.lineTo(w*.55,h*.64);ctx.lineTo(w*.95,h);ctx.lineTo(w*.05,h);ctx.closePath();ctx.fill();
+    ctx.save();ctx.strokeStyle='rgba(255,250,188,.51)';ctx.lineWidth=2.5;ctx.setLineDash([14,13]);
+    for(const s of [-1,1]){ctx.beginPath();ctx.moveTo(w*.5+s*w*.085,h);ctx.lineTo(w*.5+s*w*.016,h*.65);ctx.stroke();}ctx.restore();
+    // Cavaletes apenas no nível inicial, quando o alvo repousa no chão.
+    if((getSettings()?.level||'iniciante')==='iniciante'){
+      ctx.fillStyle='rgba(12,22,12,.4)';ctx.beginPath();ctx.ellipse(m.x,m.y+m.r*1.9,m.r*.84,m.r*.15,0,0,Math.PI*2);ctx.fill();
+      for(const sx of [-.5,.5]){
+        const x=m.x+sx*m.r*.85;
+        ctx.strokeStyle='#50301d';ctx.lineWidth=m.r*.12;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(m.x+sx*m.r*.37,m.y+m.r*.55);ctx.lineTo(x,m.y+m.r*1.86);ctx.stroke();
+        ctx.strokeStyle='#ab7e45';ctx.lineWidth=m.r*.045;ctx.beginPath();ctx.moveTo(m.x+sx*m.r*.37-2,m.y+m.r*.55);ctx.lineTo(x-2,m.y+m.r*1.84);ctx.stroke();
+      }
+    }
+    // Disco único móvel, também no modo 2D de compatibilidade.
+    const setting=getSettings()||{};
+    const discs=setting.dualTargets?mediumTwinTargets(setting.seconds)
+      .map(d=>({x:m.x+d.x*m.r,y:m.y,r:m.r*d.r})):[m];
+    const colors=['#f5f2e3','#191d22','#f5f4e8','#171a20','#168fcb','#1b82b8','#e64033','#cc2d28','#ffcb3c','#ffdd62'];
+    for(const disc of discs){
+      const shadow=ctx.createRadialGradient(disc.x-disc.r*.18,disc.y-disc.r*.18,disc.r*.15,disc.x,disc.y,disc.r*1.17);
+      shadow.addColorStop(0,'#d5b46c');shadow.addColorStop(.83,'#95622e');shadow.addColorStop(1,'#553c23');
+      ctx.fillStyle=shadow;ctx.beginPath();ctx.arc(disc.x,disc.y,disc.r*1.14,0,Math.PI*2);ctx.fill();
+      colors.forEach((c,i)=>{ctx.beginPath();ctx.arc(disc.x,disc.y,disc.r*(1-i*.097),0,Math.PI*2);ctx.fillStyle=c;ctx.fill();ctx.strokeStyle='rgba(33,28,25,.32)';ctx.lineWidth=.9;ctx.stroke();});
+      ctx.beginPath();ctx.arc(disc.x,disc.y,disc.r*.07,0,Math.PI*2);ctx.strokeStyle='#9d682b';ctx.lineWidth=1.4;ctx.stroke();
+      ctx.save();ctx.translate(disc.x,disc.y);
+      for(let i=0;i<64;i++){const angle=i*Math.PI*2/64;ctx.strokeStyle=i%3?'rgba(255,212,114,.43)':'rgba(81,46,17,.46)';ctx.lineWidth=i%2?2.2:1.3;ctx.beginPath();ctx.moveTo(Math.cos(angle)*disc.r*1.03,Math.sin(angle)*disc.r*1.03);ctx.lineTo(Math.cos(angle+.055)*disc.r*1.13,Math.sin(angle+.055)*disc.r*1.13);ctx.stroke();}
+      ctx.restore();
+    }
+    // Modern recurve bow with metallic grooves, not a wooden longbow.
+    const {bx,by,size,sightX,sightY}=fallbackSightGeometry();
+    const bladeTop={x:bx-12,y:by-size*.58},bladeBottom={x:bx-10,y:by+size*.58};
+    ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+    let metal=ctx.createLinearGradient(bx-35,0,bx+32,0);metal.addColorStop(0,'#17212b');metal.addColorStop(.20,p.body);metal.addColorStop(.43,'#d8e1eb');metal.addColorStop(.62,p.body);metal.addColorStop(1,p.trim);
+    ctx.strokeStyle='#141920';ctx.lineWidth=29;ctx.beginPath();ctx.moveTo(bladeTop.x,bladeTop.y);ctx.bezierCurveTo(bx+23,by-size*.3,bx-18,by-size*.13,bx,by);ctx.bezierCurveTo(bx+18,by+size*.16,bx+12,by+size*.35,bladeBottom.x,bladeBottom.y);ctx.stroke();
+    ctx.strokeStyle=metal;ctx.lineWidth=22;ctx.stroke();ctx.strokeStyle=p.trim;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(bx+3,by-size*.34);ctx.lineTo(bx+5,by-size*.08);ctx.moveTo(bx+5,by+size*.18);ctx.lineTo(bx+1,by+size*.37);ctx.stroke();
+    // Drawn string, rings of an actual circular front sight.
+    const pull=power*size*.07;ctx.strokeStyle='#1b1c20';ctx.lineWidth=2.3;ctx.beginPath();ctx.moveTo(bladeTop.x,bladeTop.y);ctx.lineTo(bx+pull+5,by);ctx.lineTo(bladeBottom.x,bladeBottom.y);ctx.stroke();
+    const sightR=Math.max(11,Math.min(17,size*.048));
+    // Mira livre: sem ponte atravessando o alvo.
+    ctx.strokeStyle='#25292d';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(sightX,sightY,sightR,0,Math.PI*2);ctx.strokeStyle='#26292d';ctx.lineWidth=4.2;ctx.stroke();
+    ctx.strokeStyle=p.trim;ctx.lineWidth=1.3;ctx.beginPath();ctx.arc(sightX,sightY,sightR-3,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='rgba(230,239,240,.7)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(sightX-sightR+7,sightY);ctx.lineTo(sightX+sightR-7,sightY);ctx.moveTo(sightX,sightY-sightR+7);ctx.lineTo(sightX,sightY+sightR-7);ctx.stroke();
+    // Shared black arrow, white/red feathers. Drawn from nocking point toward the target.
+    // Flecha curta junto ao punho, sem atravessar a zona de pontuação.
+    ctx.strokeStyle='#11151d';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(bx+pull+25,by+26);ctx.lineTo(bx-76,by-12);ctx.stroke();
+    ctx.strokeStyle='#9baab4';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(bx+pull+24,by+25);ctx.lineTo(bx-76,by-12);ctx.stroke();
+    ctx.fillStyle=arrowPalette().feather;ctx.beginPath();ctx.moveTo(bx+pull+27,by+27);ctx.lineTo(bx+pull+10,by+8);ctx.lineTo(bx+pull+5,by+25);ctx.closePath();ctx.fill();
+    ctx.fillStyle=arrowPalette().secondary;ctx.beginPath();ctx.moveTo(bx+pull+27,by+27);ctx.lineTo(bx+pull+7,by+22);ctx.lineTo(bx+pull+14,by+36);ctx.closePath();ctx.fill();
+    ctx.restore();
+    requestAnimationFrame(renderFallback);
+  }
+  requestAnimationFrame(renderFallback);
+
+  // ----------------- PC SCENE -----------------
+  function material(hex,{metal=.0,rough=.55,glow=0,texture=null,transparent=false}={}){
+    const c=rgb(hex),m=new pc.StandardMaterial();m.diffuse=new pc.Color(...c);m.metalness=metal;m.gloss=100*(1-rough);
+    if(glow)m.emissive=new pc.Color(...c).mulScalar(glow);
+    if(texture){m.diffuseMap=texture; m.emissiveMap=texture;m.emissive=new pc.Color(1,1,1);m.useLighting=false;}
+    if(transparent){m.blendType=pc.BLEND_NORMAL;m.opacity=.95;m.depthWrite=false;}
+    m.update();return m;
+  }
+  function primitive(type,name,pos,scale,mat,parent=root(),rot){
+    const e=new pc.Entity(name);e.addComponent('render',{type,material:mat,castShadows:false,receiveShadows:true});
+    e.setLocalPosition(...pos);e.setLocalScale(...scale);if(rot)e.setLocalEulerAngles(...rot);parent.addChild(e);return e;
+  }
+  function tube(name,points,radii,mat,parent=root(),sides=10){
+    // Smooth genuinely curved geometry; tapering sections produce bent composite limbs.
+    const pos=[],idx=[],norm=[],up=new pc.Vec3(0,0,1);
+    for(let i=0;i<points.length;i++){
+      const v=new pc.Vec3(...points[i]),before=new pc.Vec3(...points[Math.max(0,i-1)]),after=new pc.Vec3(...points[Math.min(points.length-1,i+1)]);
+      const tangent=after.sub(before).normalize(),aux=Math.abs(tangent.dot(up))>.94?new pc.Vec3(1,0,0):up;
+      const u=new pc.Vec3().cross(tangent,aux).normalize(),w=new pc.Vec3().cross(tangent,u).normalize();
+      for(let j=0;j<sides;j++){
+        const angle=j*Math.PI*2/sides,c=Math.cos(angle),s=Math.sin(angle),normal=new pc.Vec3(u.x*c+w.x*s,u.y*c+w.y*s,u.z*c+w.z*s);
+        pos.push(v.x+normal.x*radii[i],v.y+normal.y*radii[i],v.z+normal.z*radii[i]);norm.push(normal.x,normal.y,normal.z);
+      }
+    }
+    for(let i=0;i<points.length-1;i++)for(let j=0;j<sides;j++){
+      const a=i*sides+j,b=i*sides+(j+1)%sides;idx.push(a,b,a+sides,b,b+sides,a+sides);
+    }
+    const mesh=new pc.Mesh(app.graphicsDevice);mesh.setPositions(pos);mesh.setNormals(norm);mesh.setIndices(idx);mesh.update();
+    const e=new pc.Entity(name);e.addComponent('render',{meshInstances:[new pc.MeshInstance(mesh,mat)]});parent.addChild(e);return e;
+  }
+  function circleMesh(name,radius,depth,mat,parent=root()){
+    // Tube around a 2D circular curve, facing towards the player (+Z).
+    const pts=[],rs=[];for(let k=0;k<=96;k++){const a=k*Math.PI*2/96;pts.push([Math.cos(a)*radius,Math.sin(a)*radius,0]);rs.push(depth);}return tube(name,pts,rs,mat,parent,8);
+  }
+  function grainCanvas(kind='target'){
+    const c=document.createElement('canvas');c.width=c.height=1024;const x=c.getContext('2d');
+    if(kind==='wood'){
+      x.fillStyle='#986a3d';x.fillRect(0,0,1024,1024);
+      for(let i=0;i<260;i++){x.strokeStyle=i%4?'rgba(58,34,14,.11)':'rgba(245,206,132,.17)';x.lineWidth=1+i%4;
+        let yy=(i*53)%1024;x.beginPath();x.moveTo(0,yy);for(let j=0;j<14;j++)x.lineTo(j*80,yy+Math.sin(j*.75+i)*4);x.stroke();}
+    }else{
+      x.clearRect(0,0,1024,1024);const cx=512,cy=512,r=480;
+      const rings=['#eee9d8','#27282b','#f1eee4','#25272b','#109aca','#157fb1','#e34838','#cd3133','#ffd04c','#ffda59'];
+      for(let i=0;i<rings.length;i++){x.beginPath();x.arc(cx,cy,r*(1-i*.098),0,7);x.fillStyle=rings[i];x.fill();}
+      for(let j=0;j<9;j++){x.beginPath();x.arc(cx,cy,r*(.902-j*.098),0,7);x.strokeStyle='rgba(12,20,19,.32)';x.lineWidth=1.6;x.stroke();}
+      for(let i=0;i<4300;i++){
+        const a=(i*137.51)*Math.PI/180,rr=Math.sqrt((i*97%4300)/4300)*r*.95,px=cx+Math.cos(a)*rr,py=cy+Math.sin(a)*rr;
+        x.fillStyle=i%2?'rgba(255,255,255,.06)':'rgba(0,0,0,.045)';x.fillRect(px,py,1.5,1.2);
+      }
+      x.beginPath();x.arc(cx,cy,r*.045,0,7);x.strokeStyle='#b67b25';x.lineWidth=3;x.stroke();
+    }
+    const t=new pc.Texture(app.graphicsDevice,{width:1024,height:1024,format:pc.PIXELFORMAT_RGBA8,mipmaps:true});t.setSource(c);return t;
+  }
+  function terrainTexture(){
+    const c=document.createElement('canvas');c.width=c.height=512;const g=c.getContext('2d');
+    const colors={A:['#4a7c37','#70a94b','#244d2b'],B:['#66513b','#90764b','#352a28'],C:['#326d52','#579c6a','#203e37']}[currentHouse];
+    g.fillStyle=colors[0];g.fillRect(0,0,512,512);
+    let seed=14203;
+    const rand=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
+    for(let i=0;i<8600;i++){
+      const x=rand()*512,y=rand()*512,alpha=.08+rand()*.24;
+      g.globalAlpha=alpha;g.fillStyle=colors[1+(i%2)];
+      if(currentHouse==='B'){g.fillRect(x,y,1+rand()*4,1+rand()*9);}
+      else{g.beginPath();g.moveTo(x,y);g.lineTo(x-2+rand()*4,y-3-rand()*10);g.strokeStyle=colors[1+i%2];g.lineWidth=.5+rand()*1.4;g.stroke();}
+    }
+    if(currentHouse==='B'){
+      for(let j=0;j<28;j++){
+        let x=rand()*512,y=rand()*512;g.strokeStyle='#2d2421';g.lineWidth=1+rand()*2;g.beginPath();g.moveTo(x,y);
+        for(let k=0;k<7;k++)g.lineTo(x+(k+1)*7,y+Math.sin(k*1.3+j)*8);g.stroke();
+      }
+    }
+    g.globalAlpha=1;
+    const t=new pc.Texture(app.graphicsDevice,{width:512,height:512,format:pc.PIXELFORMAT_RGBA8,mipmaps:true});t.setSource(c);return t;
+  }
+  function colorBow(){if(!bowRoot)return;
+    const p=bowPalette();const body=material(p.body,{metal:.72,rough:.20}),trim=material(p.trim,{metal:.83,rough:.20}),vane=arrowPalette();
+    const arrowPrimary=material(vane.feather,{metal:.07,rough:.38}),arrowSecondary=material(vane.secondary,{metal:.07,rough:.38});
+    for(const e of bowRoot.findComponents('render')){
+      const name=e.entity.name.toLowerCase();
+      const replacement=name.includes('bow-limb')||name.includes('bow-riser')?body:name.includes('bow-trim')||name.includes('bow-crystal')?trim:name.includes('shared arrow vane')?(name.endsWith('1')?arrowSecondary:arrowPrimary):null;
+      if(replacement){e.material=replacement;for(const mesh of e.meshInstances)mesh.material=replacement;}
+    }
+  }
+  function colorTarget(){// Base wood changes by House, scoring colors stay standardized.
+    if(!targetRoot)return;const p=palettes[currentHouse],m=material(p.beam,{metal:.08,rough:.84});
+    targetRoot.findComponents('render').forEach(e=>{if(e.entity.name.includes('wood')){e.material=m;for(const mesh of e.meshInstances)mesh.material=m;}});
+  }
+  function moveTarget(){
+    if(!targetRoot)return;
+    const setting=getSettings()||{},camZ=7,targetZ=-9,{w,h}=canvasSize();
+    const units=h/(2*Math.tan(41*Math.PI/360)*(camZ-targetZ));
+    const x=((setting.shift||0)*w)/units;
+    const scale=targetScale(setting.distance);
+    targetRoot.setLocalScale(scale,scale,scale);
+    const moving=setting.level==='avancado'||setting.level==='lendario';
+    // O fundo da V2 é uma pintura: a grama pintada não coincide com o
+    // plano do chão 3D da V1. Ajustar a projeção do cavalete à perspectiva
+    // da GRAMA para evitar o alvo flutuando em todas as distâncias.
+    const meters=clamp(Number(setting.distance)||10,10,150);
+    const footY=h*(.65+.28*Math.pow((150-meters)/140,2.1));
+    const projectedRadius=1.34*scale*units;
+    const centerY=footY-1.48*projectedRadius;
+    const projectedX=w*(.5+(setting.shift||0));
+    const grounded=camera?.camera?.screenToWorld(
+      projectedX,centerY,camZ-targetZ);
+    const suspendedY=2.05-(setting.verticalShift||0)*h/units;
+    if(moving||!grounded||!Number.isFinite(grounded.y))
+      targetRoot.setLocalPosition(x,moving?suspendedY:(-.28+2.02*scale),targetZ);
+    else targetRoot.setPosition(grounded);
+    if(targetStand)targetStand.enabled=!moving;
+    updateTwinDiscs();
+    parent.dataset.targetStand=moving?'suspended':'standing';
+    if(movingRail)movingRail.enabled=setting.level==='lendario';
+    if(opponentReplayTarget&&camera?.camera&&gl){
+      // screenToWorld usa pixels CSS do canvas; preservar profundidade e escala
+      // do alvo atual e suspender apenas seu deslocamento na tela.
+      const world=camera.camera.screenToWorld(
+        opponentReplayTarget.x*(gl.clientWidth||w),
+        opponentReplayTarget.y*(gl.clientHeight||h),camZ-targetZ);
+      if(Number.isFinite(world.x)&&Number.isFinite(world.y)&&Number.isFinite(world.z))
+        targetRoot.setPosition(world);
+    }
+  }
+  function buildWorld(){
+    const metals={wood:material('#634124',{rough:.8}),woodlight:material('#a2703f',{rough:.8}),rope:material('#d5ae64',{rough:.89}),iron:material('#1d2329',{metal:.73,rough:.31}),silver:material('#c8d2d7',{metal:.82,rough:.19}),red:material('#da332d'),white:material('#f4f2e7')};
+    targetRoot=new pc.Entity('Target assembly');root().addChild(targetRoot);moveTarget();
+    const d=new pc.Entity('Competition target visual');targetRoot.addChild(d);targetVisual=d;
+    targetStand=new pc.Entity('Removable target ground stand');
+    d.addChild(targetStand);
+    // Cavaletes permanecem apenas no alvo FIXO. O alvo suspenso usa trilho,
+    // sem pernas de madeira flutuando.
+    // Cavalete simétrico abaixo e atrás do disco; sem suportes diagonais sobre os anéis.
+    tube('left wood leg',[[-.82,-1.97,-.38],[-.66,-1.12,-.35],[-.53,-.58,-.32]],[.09,.085,.07],metals.wood,targetStand,12);
+    tube('right wood leg',[[.82,-1.97,-.38],[.66,-1.12,-.35],[.53,-.58,-.32]],[.09,.085,.07],metals.wood,targetStand,12);
+    tube('cross wood beam',[[-.74,-1.48,-.40],[0,-1.48,-.40],[.74,-1.48,-.40]],[.055,.06,.055],metals.woodlight,targetStand,10);
+    movingRail=new pc.Entity('Suspended target sliding rail');
+    root().addChild(movingRail);
+    // Trilho compacto, colocado acima do alvo: sem estrutura gigante cobrindo a paisagem.
+    tube('steel horizontal rail',[[-3.25,3.85,-9.5],[0,3.85,-9.5],[3.25,3.85,-9.5]],[.035,.040,.035],metals.iron,movingRail,12);
+    for(const dx of [-3.25,3.25]){
+      tube('support rail post '+dx,[[dx,-.28,-9.5],[dx,1.7,-9.5],[dx,3.85,-9.5]],[.045,.043,.041],metals.wood,movingRail,10);
+    }
+    movingRail.enabled=false;
+    // Body of compressed hay and thick jute rope; target is genuinely spatial.
+    primitive('cylinder','woven straw body',[0,0,-.085],[2.7,.25,2.7],material('#946732',{rough:.95}),d,[90,0,0]);
+    circleMesh('rope bevel outline',1.365,.055,metals.rope,d);
+    for(let j=0;j<16;j++){
+      const a=j*Math.PI*2/16;const x=Math.cos(a)*1.35,y=Math.sin(a)*1.35;
+      tube('jute braid '+j,[[x,y,.072],[x*1.011,y*1.011,.12],[Math.cos(a+.05)*1.34,Math.sin(a+.05)*1.34,.18]],[.011,.01,.009],j%3?metals.rope:metals.woodlight,d,6);
+    }
+    // Competition target texture and registered rings (white / black / blue / red / yellow).
+    const tm=material('#ffffff',{texture:grainCanvas(),transparent:true});tm.opacityMap=tm.diffuseMap;tm.opacityMapChannel='a';tm.alphaTest=.08;tm.update();
+    primitive('plane','competition target textile',[0,0,.052],[2.68,1,2.68],tm,d,[90,0,0]);
+    primitive('cylinder','target center brass pin',[0,0,.085],[.07,.027,.07],metals.rope,d,[90,0,0]);
+    // Cast shadow and rich near-field environment, no primitive cube/cone trees.
+    // Textured 3D firing ground anchors the camera and target in physical space;
+    // the high-detail Kingdom painting remains the distant environment/sky.
+    const fieldTexture=terrainTexture();
+    const grass=new pc.StandardMaterial();grass.diffuse=new pc.Color(1,1,1);grass.diffuseMap=fieldTexture;
+    grass.diffuseMapTiling=new pc.Vec2(3,4);grass.metalness=0;grass.gloss=4;grass.update();
+    terrainElement=primitive('plane','procedural textured playing field',[0,-.28,-7],[40,1,36],grass);terrainElement.enabled=!backdropMode;
+    const line=material(currentHouse==='B'?'#d48e54':'#dddab4',{rough:.87});
+    for(const side of [-1,1]){
+      const stripe=tube('range boundary stripe '+side,[[side*2.85,-.245,6],[side*2.0,-.245,-1],[side*1.15,-.245,-11]],
+      [.023,.022,.017],line,root(),7);ambientProps.push(stripe);stripe.enabled=!backdropMode;
+    }
+
+    const brass=material('#dba84d',{metal:.65,rough:.23});
+    const rocks=material('#56574d',{rough:.93});
+    for(let side of [-1,1])for(let i=0;i<3;i++){
+      const z=-3-i*4.2,x=side*(3.8-i*.36),scale=1.0-i*.14;
+      const base=new pc.Entity('Range prop');base.setLocalPosition(x,0,z);root().addChild(base);ambientProps.push(base);base.enabled=!backdropMode;
+      tube('wooden fence post',[[0,-.38,0],[0,.32,0],[0,.75,0]],[.12*scale,.105*scale,.09*scale],metals.wood,base);
+      primitive('sphere','fence cap bronze',[0,.76,0],[.17,.16,.17],brass,base);
+      // Torch glows and slow animated ambient fire sprite.
+      if(i===1){primitive('sphere','torch flame',[0,.86,0],[.19,.29,.19],material(currentHouse==='B'?'#ff7b15':'#ffc24b',{glow:.8}),base);}
+    }
+    for(let i=0;i<16;i++){
+      const z=-3-i*.55,x=(i%2?-1:1)*(2.1+(i%5)*.12);
+      const stone=primitive('sphere','natural stone '+i,[x,-.19,z],[.20+i%3*.08,.13+i%2*.08,.22],rocks);ambientProps.push(stone);stone.enabled=!backdropMode;
+    }
+    // Set house color and look immediately.
+    buildBow();colorBow();colorTarget();
+    loadTargetModel();
+  }
+  function buildBow(){
+    // WeaponPivot único: arco visual, flecha e mira movem-se juntos.
+    bowRoot=new pc.Entity('WeaponPivot - bow arrow sight');
+    camera.addChild(bowRoot);
+    // Sem fantasma: o arco provisório fica oculto até ambos os GLBs terminarem.
+    bowRoot.enabled=false;
+    bowRoot.__bowLoaded=false;bowRoot.__arrowLoaded=false;
+    bowRoot.__bowFailed=false;bowRoot.__arrowFailed=false;
+    bowRoot.setLocalScale(.60,.60,.60);
+    bowRoot.setLocalPosition(.32,0,-2.7);
+    // O eixo longo do GLB já foi alinhado a +Y por fitWeaponModel.
+    // A face do arco deve permanecer no plano XY, perpendicular à linha de tiro -Z.
+    // O antigo giro Y=90° mostrava o arco de perfil, voltado para a esquerda.
+    bowVisualPivot=new pc.Entity('Bow visual calibration');
+    bowVisualPivot.setLocalScale(1.20,1.20,1.20);
+    bowVisualPivot.setLocalEulerAngles(0,0,0);
+    parent.dataset.bowAxialAngle='0';
+    parent.dataset.bowFacing='target-negative-z';
+    bowRoot.addChild(bowVisualPivot);
+    bowFallbackRoot=new pc.Entity('Vertical procedural bow fallback');
+    bowFallbackRoot.setLocalScale(.41,.41,.41);
+    bowVisualPivot.addChild(bowFallbackRoot);
+    const pp=bowPalette(),body=material(pp.body,{metal:.79,rough:.19}),gold=material(pp.trim,{metal:.9,rough:.18}),
+      dark=material('#1b1c20',{metal:.46,rough:.35}),silver=material('#d5e0e7',{metal:.88,rough:.23}),red=material('#dc342a'),ivory=material('#faf0db');
+    const p=[[0,-1.52,0],[.045,-1.35,0],[.12,-.99,.035],[.105,-.55,.02],[.055,-.16,0],[.018,.18,0],[.075,.62,.02],[.09,1,.02],[.02,1.37,.02],[0,1.52,0]];
+    tube('bow-limb curved compound',p,p.map((_,i)=>(i===4||i===5?.07:.038)*(equipment.bow==='real'?1.32:equipment.bow==='vento'?.73:1)),body,bowFallbackRoot,16);
+    tube('bow-trim upper line',[[.062,.25,-.028],[.115,.88,-.021],[.05,1.39,.025]],[.01,.011,.007],gold,bowFallbackRoot);
+    tube('bow-trim lower line',[[.062,-.2,-.028],[.118,-.90,-.021],[.04,-1.36,.025]],[.01,.011,.007],gold,bowFallbackRoot);
+    const grip=primitive('cylinder','ergonomic dark handgrip',[.03,-.12,-.08],[.17,.43,.13],dark,bowFallbackRoot,[0,0,90]);
+    // Mira circular original da V1, presa ao arco (sem mira HTML duplicada).
+    const sight=new pc.Entity('Circle aiming sight');
+    sight.setLocalScale(.65,.65,.65);
+    sight.setLocalPosition(-1.15,.25,-.08);
+    bowRoot.addChild(sight);sightAnchor=sight;
+    circleMesh('sight black metal ring',.088,.007,dark,sight);
+    circleMesh('sight gilded inner rim',.078,.0026,gold,sight);
+    tube('sight vertical line',[[0,-.044,.003],[0,0,.003],[0,.044,.003]],[.0009,.0009,.0009],silver,sight,5);
+    tube('sight horizontal line',[[-.044,0,.003],[0,0,.003],[.044,0,.003]],[.0009,.0009,.0009],silver,sight,5);
+    primitive('sphere','sight central dot',[0,0,.005],[.006,.006,.006],red,sight);
+    // A single arrow asset: its colors DO NOT change when changing House.
+    arrowLoaded=new pc.Entity('Arrow nock - child of WeaponPivot');
+    bowRoot.addChild(arrowLoaded);
+    // A flecha conserva as proporções aprovadas e acompanha o WeaponPivot.
+    // Seu eixo -Z aponta para o alvo, sem herdar a rotação axial do arco.
+    arrowLoaded.setLocalScale(1,1,1);
+    const nock=arrowNockPose();
+    arrowLoaded.setLocalEulerAngles(0,nock.yaw,0);
+    arrowLoaded.setLocalPosition(nock.x,nock.y,nock.z);
+    const arrowFallback=new pc.Entity('Fallback arrow - nock aligned');
+    // Espessura aprovada mantida; comprimento encurtado mais 15% nesta revisão.
+    // Encurtar 15% mantendo a traseira no mesmo encaixe e a espessura intacta.
+    arrowFallback.setLocalPosition(0,0,-.54);
+    arrowFallback.setLocalScale(5,5,1.02);
+    arrowLoaded.addChild(arrowFallback);
+    tube('black arrow shaft',[[0,0,.53],[0,0,.18],[0,0,-.65]],[.012,.012,.011],dark,arrowFallback,12);
+    primitive('cone','machined arrow point',[0,0,-.70],[.036,.09,.036],silver,arrowFallback,[90,0,0]);
+    const fin=[[.0,.0,.47],[.076,.042,.26],[0,0,.16]],vanes=arrowPalette(),primary=material(vanes.feather),secondary=material(vanes.secondary);
+    for(let i=0;i<3;i++){
+      const a=i*Math.PI*2/3;
+      tube('shared arrow vane '+i,fin.map(([x,y,z])=>[x*Math.cos(a)-y*Math.sin(a),x*Math.sin(a)+y*Math.cos(a),z]),[.023,.038,.014],i===1?secondary:primary,arrowFallback,6);
+    }
+    // String gets physical tension by shifting central guide while aiming.
+    bowString=tube('tensioned carbon cord',[[0,-1.51,.03],[-.11,0,.45],[0,1.51,.03]],[.004,.004,.004],dark,bowFallbackRoot,7);
+    bowRoot.__fallbacks=[bowFallbackRoot];
+    loadBowModel();
+  }
+  // Calibração feita nos GLBs COMPLETOS, incluindo as matrizes internas
+  // de cada nó. A ponta aponta para -Z, a traseira fica em Z=0 e o
+  // comprimento base é 1.40 unidade para os três modelos.
+  // Eixos da cena original: standard -X (0.95106), precision +X (5.82026),
+  // power +Z (84.41818). A espessura é reduzida após a rotação.
+  const arrowSpecs={
+    'arrow-standard.glb':{scale:1.472041,rot:[0,-90,0],offset:[-.002470,-.007943,-.015033],width:.38},
+    'arrow-precision.glb':{scale:.240539,rot:[0,90,0],offset:[.001493,.009730,-.820973],width:.28},
+    'arrow-power.glb':{scale:.0165841,rot:[0,180,0],offset:[.000208,-.005913,-.704571],width:.55}
+  };
+  function loadModel(path,callback){
+    if(!app||destroyed)return;
+    if(modelAssets[path]){callback(null,modelAssets[path]);return;}
+    if(!modelLoads[path]){
+      modelLoads[path]=(path.startsWith('models3d/equipment/')?modelSource(path.split('/').pop()):Promise.resolve(path))
+        .then(url=>new Promise((resolve,reject)=>{
+          if(!app||destroyed)return reject(Error('Cena encerrada'));
+          app.assets.loadFromUrlAndFilename(url,path.split('/').pop().replace(/\.gz$/i,''),'container',(err,asset)=>{
+            if(err||!asset?.resource)return reject(err||Error('GLB ausente'));
+            resolve(asset.resource);
+          });
+        }))
+        .then(resource=>(modelAssets[path]=resource,resource));
+    }
+    modelLoads[path].then(resource=>{if(!destroyed)callback(null,resource)})
+      .catch(err=>{console.warn('[ClassMana] GLB:',path,err);if(!destroyed)callback(err)});
+  }
+  // Cada GLB foi criado em um sistema de eixos diferente. Calibração medida
+  // nas malhas originais: a face colorida fica perpendicular ao disparo,
+  // voltada para a câmera (+Z), e o centro dos anéis coincide com a pontuação.
+  const targetSpecs={
+   'target-stand.glb':{scale:1.3,rot:[0,-90,0],pos:[0,0,0]},      // disco original no plano YZ
+   'target-alt.glb':{scale:1.10,rot:[0,180,0],pos:[0,-3.05,0]},   // face original aponta -Z
+   'target-light.glb':{scale:3.45,rot:[0,0,0],pos:[0,-1.80,0]},  // disco original de raio .385
+   'target-suspended.glb':{scale:.47,rot:[0,0,0],pos:[0,0,0]}    // disco original no plano XY
+  };
+  function activeTargetFile(){
+    const q=getSettings()||{},level=q.level||'iniciante';
+    // O modelo suspenso GLB tem um painel opaco visto de frente.
+    // Para o difícil, usar o disco frontal sem placa, mantendo trilha lendária e escudo.
+    if(level==='lendario'||level==='avancado')return 'medium-twin-procedural';
+    return (q.index||0)>=3?'target-alt.glb':'target-stand.glb';
+  }
+  // O disco pode ter sido exportado deitado: medir eixos da malha para deixá-lo em pé.
+  function calibrateMobileDisc(model,holder){
+    function bounds(){
+      const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
+      let count=0;
+      model.syncHierarchy();
+      for(const comp of model.findComponents('render')){
+        for(const inst of comp.meshInstances||[]){
+          const box=inst.aabb;if(!box)continue;
+          const c=box.center,h=box.halfExtents;
+          const lo=[c.x-h.x,c.y-h.y,c.z-h.z],hi=[c.x+h.x,c.y+h.y,c.z+h.z];
+          for(let i=0;i<3;i++){min[i]=Math.min(min[i],lo[i]);max[i]=Math.max(max[i],hi[i]);}
+          count++;
+        }
+      }
+      return count?{size:max.map((v,i)=>v-min[i]),center:min.map((v,i)=>(v+max[i])/2)}:null;
+    }
+    model.setLocalPosition(0,0,0);
+    model.setLocalScale(1,1,1);
+    model.setLocalEulerAngles(0,0,0);
+    let b=bounds();if(!b)return false;
+    const thin=b.size.indexOf(Math.min(...b.size));
+    if(thin===1)model.setLocalEulerAngles(90,0,0);
+    else if(thin===0)model.setLocalEulerAngles(0,-90,0);
+    b=bounds();if(!b)return false;
+    const worldScale=holder.getLocalScale().x||1;
+    const diameter=Math.max(b.size[0],b.size[1])/worldScale;
+    if(!Number.isFinite(diameter)||diameter<.001)return false;
+    const factor=2.68/diameter;
+    model.setLocalScale(factor,factor,factor);
+    b=bounds();if(!b)return false;
+    const center=holder.worldToLocal(new pc.Vec3(...b.center));
+    model.setLocalPosition(-center.x,-center.y,-center.z);
+    return true;
+  }
+  // Todos os discos importados usam clones dos materiais originais, com
+  // reforço emissivo moderado para manter cores legíveis sob tone mapping ACES.
+  // Não modifica as luzes da arena, as molduras nem os demais modelos.
+  function brightenMobileDisc(model){
+    const clones=new Map();
+    for(const component of model.findComponents('render')){
+      for(const instance of component.meshInstances||[]){
+        const original=instance.material;
+        if(!original||typeof original.clone!=='function')continue;
+        let adjusted=clones.get(original);
+        if(!adjusted){
+          adjusted=original.clone();
+          const base=original.diffuse;
+          if(original.diffuseMap){
+            // Repete a textura RGB original como emissão, preservando os anéis.
+            adjusted.emissiveMap=original.diffuseMap;
+            adjusted.emissiveMapUv=original.diffuseMapUv;
+            adjusted.emissiveMapChannel='rgb';
+            adjusted.emissive=new pc.Color(.82,.82,.82);
+          }else if(base){
+            // Materiais sem textura: realça a cor já gravada no GLB.
+            adjusted.emissive=new pc.Color(
+              Math.min(1,base.r*.66),
+              Math.min(1,base.g*.66),
+              Math.min(1,base.b*.66)
+            );
+          }
+          // Realça os anéis sem transformar o disco em uma superfície luminosa plana.
+          adjusted.emissiveIntensity=.95;
+          if('gloss' in adjusted) adjusted.gloss=Math.max(adjusted.gloss||0,38);
+          adjusted.update();
+          clones.set(original,adjusted);
+        }
+        instance.material=adjusted;
+      }
+    }
+    parent.dataset.targetLighting=clones.size?'enhanced':'original';
+  }
+  // Um único disco móvel no médio, usando a mesma trajetória da pontuação.
+  function updateTwinDiscs(){
+    if(!targetRoot||!targetVisual)return;
+    const setting=getSettings()||{},moving=!!setting.dualTargets;
+    const original=targetRoot.__model3d;
+    if(dualProcedural){dualProcedural.destroy();dualProcedural=null;}
+    if(dualDiscs.length>1)dualDiscs.slice(1).forEach(d=>d.destroy());
+    dualDiscs=[];
+    const disc=original||targetVisual;
+    const position=moving?mediumTwinTargets(setting.seconds)[0]:null;
+    disc.enabled=true;
+    disc.setLocalScale(moving?.70:1,moving?.70:1,moving?.70:1);
+    disc.setLocalPosition(position?position.x*1.34:0,0,0);
+    targetVisual.enabled=!original;
+    parent.dataset.targetCount='1';
+  }
+  function loadTargetModel(){
+    if(!targetRoot||!targetVisual)return;
+    const holder=targetRoot,file=activeTargetFile();
+    if(targetModelKey===file)return;
+    targetModelKey=file;
+    if(dualDiscs.length>1)dualDiscs[1].destroy();
+    dualDiscs=[];
+    if(dualProcedural){dualProcedural.destroy();dualProcedural=null;}
+    holder.__model3d?.destroy();holder.__model3d=null;targetVisual.enabled=true;
+    // Alvo de 10–65 m: disco 3D procedural com anéis voltados ao jogador.
+    // O GLB anterior estava exibindo a borda do disco, como um prato de lado.
+    if(file==='target-stand.glb'||file==='target-alt.glb'||file==='medium-twin-procedural'){
+      // O modo médio usa SOMENTE um disco procedural colorido.
+      // Jamais instanciar o GLB central fosco em paralelo com a dupla móvel.
+      parent.dataset.glbTarget='procedural';
+      parent.dataset.targetModel=file==='medium-twin-procedural'?'medium-single-rings':'competition-rings';
+      updateTwinDiscs();
+      return;
+    }
+    loadModel(file.startsWith('models3d/')?file:'models3d/equipment/'+file,(err,res)=>{
+      if(err||holder!==targetRoot||targetModelKey!==file)return;
+      const t=targetSpecs[file],container=new pc.Entity('Alvo 3D '+file),model=res.instantiateRenderEntity();
+      container.addChild(model);holder.addChild(container);
+      if(file==='target-suspended.glb'||file==='models3d/alvo_suspenso_sem_cavalete.glb'){
+        if(!calibrateMobileDisc(model,holder)){
+          container.destroy();
+          parent.dataset.glbTarget='procedural';
+          parent.dataset.targetModel='competition-rings';
+          return;
+        }
+      }else{
+        model.setLocalScale(t.scale,t.scale,t.scale);
+        model.setLocalEulerAngles(...t.rot);
+        model.setLocalPosition(...t.pos);
+      }
+      // Alvo lendário: calibração da face por eixo mais fino, mantendo o disco voltado ao arqueiro.
+      brightenMobileDisc(model);
+      holder.__model3d=container;
+      targetVisual.enabled=false;
+      updateTwinDiscs();
+      parent.dataset.glbTarget='ready';parent.dataset.targetModel=file;
+    });
+  }
+  function appendArrowModel(parentEntity,model,file){
+    const spec=arrowSpecs[file]||arrowSpecs['arrow-standard.glb'];
+    // Nunca calcular escala por AABB runtime: o arquivo standard possui
+    // rotação e escala internas, e essa medição produzia uma tora gigante.
+    const slim=new pc.Entity('Arrow calibrated shaft');
+    // Só o comprimento muda: Z 1.20 -> 1.02 (-15%).
+    // Largura e altura continuam EXATAMENTE spec.width*5 (+150% aprovado).
+    slim.setLocalScale(spec.width*5,spec.width*5,1.02);
+    parentEntity.addChild(slim);
+    model.setLocalEulerAngles(...spec.rot);
+    model.setLocalScale(spec.scale,spec.scale,spec.scale);
+    model.setLocalPosition(...spec.offset);
+    slim.addChild(model);
+    return slim;
+  }
+  function selectedArrow(){
+    return (GEAR_BY_ID[equipment.bow]||GEAR_BY_ID.classico).arrow;
+  }
+  // Só revelar a arma quando arco E flecha GLB terminarem de carregar.
+  function revealLoadedWeapon(owner){
+    if(owner!==bowRoot||!owner.__bowLoaded||!owner.__arrowLoaded)return;
+    for(const child of owner.__fallbacks||[])
+      child.enabled=owner.__bowFailed||child===arrowLoaded||child===sightAnchor;
+    owner.enabled=true;
+    updateBowAim();
+    parent.dataset.weaponPose='v1-mechanics-arrow-grip-lowered-007-v13';
+    parent.dataset.glbBow=owner.__bowFailed?'fallback':'ready';
+    parent.dataset.glbArrow=owner.__arrowFailed?'fallback':'ready';
+  }
+  function loadArrowModel(owner){
+    const file=selectedArrow(),id=equipment.bow;
+    const token=owner.__arrowLoadToken=(owner.__arrowLoadToken||0)+1;
+    loadModel('models3d/equipment/'+file,(err,res)=>{
+      if(owner!==bowRoot||id!==equipment.bow||!arrowLoaded||owner.__arrowLoadToken!==token)return;
+      if(err||!res){
+        owner.__arrowFailed=true;owner.__arrowLoaded=true;
+        revealLoadedWeapon(owner);return;
+      }
+      arrowLoaded.__mesh3d?.destroy();
+      const mesh=res.instantiateRenderEntity();mesh.name='Flecha '+file;
+      const calibrated=appendArrowModel(arrowLoaded,mesh,file);
+      for(const child of arrowLoaded.children)if(child!==calibrated)child.enabled=false;
+      arrowLoaded.__mesh3d=calibrated;
+      owner.__arrowLoaded=true;
+      revealLoadedWeapon(owner);
+    });
+  }
+  // Calibração de arco: medir o eixo visual dominante das peças do GLB.
+  // Um simples bounding box X/Y não detecta modelos a 30–45 graus.
+  function bowVisualAxis(model){
+    const samples=[];
+    model.syncHierarchy();
+    for(const render of model.findComponents('render')){
+      for(const inst of render.meshInstances||[]){
+        const mesh=inst.mesh,transform=inst.node?.getWorldTransform?.();
+        let added=0;
+        if(mesh&&transform&&typeof mesh.getPositions==='function'){
+          try{
+            const positions=[];
+            mesh.getPositions(positions);
+            const step=Math.max(1,Math.ceil(positions.length/3/110));
+            for(let i=0;i+2<positions.length;i+=3*step){
+              const p=transform.transformPoint(new pc.Vec3(positions[i],positions[i+1],positions[i+2]));
+              if(Number.isFinite(p.x)&&Number.isFinite(p.y)){
+                samples.push([p.x,p.y]);added++;
+              }
+            }
+          }catch(_error){/* GLBs sem posições CPU: usar centros das peças. */}
+        }
+        if(!added&&inst.aabb){
+          const p=inst.aabb.center;
+          if(Number.isFinite(p.x)&&Number.isFinite(p.y))samples.push([p.x,p.y]);
+        }
+      }
+    }
+    if(samples.length<3)return null;
+    let mx=0,my=0;
+    for(const p of samples){mx+=p[0];my+=p[1]}
+    mx/=samples.length;my/=samples.length;
+    let xx=0,yy=0,xy=0;
+    for(const [x,y] of samples){const dx=x-mx,dy=y-my;xx+=dx*dx;yy+=dy*dy;xy+=dx*dy}
+    const anisotropy=Math.hypot(xx-yy,2*xy)/Math.max(1e-8,xx+yy);
+    if(anisotropy<.13)return null;
+    return Math.atan2(2*xy,xx-yy)*90/Math.PI;
+  }
+  // PCA tridimensional dos vértices: encontra o eixo longo do GLB,
+  // inclusive nos modelos cujo eixo original é Z ou está na diagonal.
+  function bowLongAxis3D(model){
+    const samples=[];
+    model.syncHierarchy();
+    for(const render of model.findComponents('render'))for(const inst of render.meshInstances||[]){
+      const mesh=inst.mesh,world=inst.node?.getWorldTransform?.();
+      let found=false;
+      if(mesh&&world&&typeof mesh.getPositions==='function'){
+        try{
+          const coords=[];mesh.getPositions(coords);
+          const step=Math.max(1,Math.ceil(coords.length/3/160));
+          for(let i=0;i+2<coords.length;i+=3*step){
+            const p=world.transformPoint(new pc.Vec3(coords[i],coords[i+1],coords[i+2]));
+            if(Number.isFinite(p.x)&&Number.isFinite(p.y)&&Number.isFinite(p.z)){
+              samples.push(p);found=true;
+            }
+          }
+        }catch(_error){/* Alguns GLBs não expõem vértices na CPU. */}
+      }
+      if(!found&&inst.aabb) samples.push(inst.aabb.center.clone());
+    }
+    if(samples.length<3)return null;
+    const mean=new pc.Vec3();
+    for(const p of samples)mean.add(p);
+    mean.mulScalar(1/samples.length);
+    let xx=0,yy=0,zz=0,xy=0,xz=0,yz=0;
+    for(const p of samples){
+      const x=p.x-mean.x,y=p.y-mean.y,z=p.z-mean.z;
+      xx+=x*x;yy+=y*y;zz+=z*z;xy+=x*y;xz+=x*z;yz+=y*z;
+    }
+    const diag=[xx,yy,zz],dominant=diag.indexOf(Math.max(...diag));
+    const v=new pc.Vec3(.071,.071,.071);
+    v[['x','y','z'][dominant]]+=1;v.normalize();
+    for(let i=0;i<28;i++){
+      const next=new pc.Vec3(
+        xx*v.x+xy*v.y+xz*v.z,
+        xy*v.x+yy*v.y+yz*v.z,
+        xz*v.x+yz*v.y+zz*v.z);
+      if(next.lengthSq()<1e-12)return null;
+      v.copy(next.normalize());
+    }
+    if(v.y<0)v.mulScalar(-1);
+    return v;
+  }
+  // Normalizar tamanho e centralização SEM perder os modelos desbloqueados.
+  function fitWeaponModel(model,gear){
+    const temp=new pc.Entity('Weapon calibration');
+    app.root.addChild(temp);temp.addChild(model);
+    model.setLocalScale(1,1,1);model.setLocalPosition(0,0,0);
+    model.setLocalEulerAngles(...gear.rotation);
+    function bounds(){
+      temp.syncHierarchy();
+      const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
+      for(const render of model.findComponents('render'))for(const inst of render.meshInstances||[]){
+        const box=inst.aabb;if(!box)continue;
+        for(let i=0;i<3;i++){
+          const k=['x','y','z'][i];
+          min[i]=Math.min(min[i],box.center[k]-box.halfExtents[k]);
+          max[i]=Math.max(max[i],box.center[k]+box.halfExtents[k]);
+        }
+      }
+      return {min,max,size:max.map((v,i)=>v-min[i])};
+    }
+    let b=bounds();
+    // Modelos conhecidos: rotação absoluta, sem somar correções de PCA.
+    const knownRotation={
+      classico:[0,0,45],  // Bow Practice: +45° -> vertical
+      real:[-90,0,0],    // BOW: Z -> Y
+      vento:[0,0,90],   // Cool Bow: X -> Y
+      lendario:[0,0,0]  // Amos Bow: Y já vertical
+    }[gear.id];
+    if(knownRotation){
+      model.setLocalEulerAngles(...knownRotation);
+      b=bounds();
+    }
+    if(gear.type==='Arco'){
+      const longitudinal=bowLongAxis3D(model);
+      if(longitudinal){
+        const up=new pc.Vec3(0,1,0),dot=clamp(longitudinal.dot(up),-1,1);
+        const axis=new pc.Vec3().cross(longitudinal,up);
+        if(axis.lengthSq()>1e-10){
+          const correction=new pc.Quat().setFromAxisAngle(
+            axis.normalize(),Math.acos(dot)*180/Math.PI);
+          model.setLocalRotation(correction.mul(model.getLocalRotation().clone()));
+        }else if(dot<0){
+          const correction=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,0,1),180);
+          model.setLocalRotation(correction.mul(model.getLocalRotation().clone()));
+        }
+        b=bounds();
+      }else if(!knownRotation){
+        const axis=bowVisualAxis(model);
+        if(axis!==null){
+          let correction=90-axis;
+          while(correction>90)correction-=180;
+          while(correction< -90)correction+=180;
+          if(Math.abs(correction)>1){
+            model.setLocalEulerAngles(gear.rotation[0],gear.rotation[1],gear.rotation[2]+correction);
+            b=bounds();
+          }
+        }else if(b.size[0]>b.size[1]*1.18){
+          model.setLocalEulerAngles(gear.rotation[0],gear.rotation[1],gear.rotation[2]+90);
+          b=bounds();
+        }
+      }
+    }
+    if(b.size.every(v=>Number.isFinite(v)&&v>=0)){
+      // Dimensões máximas na unidade do arco, antes da escala da câmera (.56).
+      const limit=gear.type==='Besta'?[1.70,1.15,1.60]:[1.00,1.25,1.30];
+      const scale=Math.min(...b.size.map((v,i)=>limit[i]/Math.max(v,.00001)));
+      if(Number.isFinite(scale)&&scale>0&&scale<10000){
+        model.setLocalScale(scale,scale,scale);
+        // No Arco de Treino, a empunhadura real do GLB está em X≈0.534
+        // após a rotação de 45°, não no centro geométrico da malha.
+        const gripOffset=gear.id==='classico'
+          ?(.534-(b.min[0]+b.max[0])*.5)*scale:0;
+        model.setLocalPosition(...b.min.map((v,i)=>-(v+b.max[i])*.5*scale-(i===0?gripOffset:0)));
+      }else{
+        model.setLocalScale(gear.scale,gear.scale,gear.scale);
+        model.setLocalPosition(...gear.offset);
+      }
+    }else{
+      model.setLocalScale(gear.scale,gear.scale,gear.scale);
+      model.setLocalPosition(...gear.offset);
+    }
+    // Arco dos Ventos (nível 3): o GLB está de perfil após alinhar o eixo longo.
+    // Rotação Y positiva somente na malha do arco; flecha e mira são irmãos
+    // no WeaponPivot e não recebem essa rotação.
+    if(gear.id==='vento'){
+      const windFacing=new pc.Entity('Arco dos Ventos - face Y +90');
+      windFacing.setLocalEulerAngles(0,90,0);
+      bowVisualPivot.addChild(windFacing);
+      windFacing.addChild(model);
+      parent.dataset.windBowFaceYaw='90';
+    }else{
+      bowVisualPivot.addChild(model);
+      parent.dataset.windBowFaceYaw='0';
+    }
+    // Não aplicar correções de roll pelo PCA: elas tombavam o arco.
+    parent.dataset.bowPivot='grip';
+    parent.dataset.bowRoll='0';
+    parent.dataset.bowModel=gear.model;
+    temp.destroy();
+  }
+  function loadBowModel(){
+    const owner=bowRoot,id=equipment.bow,gear=GEAR_BY_ID[id]||GEAR_BY_ID.classico;
+    if(!owner)return;
+    const token=owner.__bowLoadToken=(owner.__bowLoadToken||0)+1;
+    owner.enabled=false;
+    owner.__bowLoaded=false;owner.__arrowLoaded=false;
+    owner.__bowFailed=false;owner.__arrowFailed=false;
+    owner.__mesh3d?.destroy();owner.__mesh3d=null;
+    parent.dataset.glbBow='loading';parent.dataset.glbArrow='loading';
+    loadArrowModel(owner);
+    loadModel('models3d/equipment/'+gear.model,(err,res)=>{
+      if(owner!==bowRoot||id!==equipment.bow||owner.__bowLoadToken!==token)return;
+      if(err||!res){
+        owner.__bowFailed=true;owner.__bowLoaded=true;
+        revealLoadedWeapon(owner);return;
+      }
+      owner.__mesh3d?.destroy();
+      const mesh=res.instantiateRenderEntity();mesh.name=gear.name;
+      fitWeaponModel(mesh,gear);
+      owner.__mesh3d=mesh;owner.__bowLoaded=true;
+      revealLoadedWeapon(owner);
+    });
+  }
+
+  function arrowNockPose(){
+    if(GEAR_BY_ID[equipment.bow]?.type==='Besta')
+      return {x:0,y:.08,z:.12,yaw:0};
+    // A flecha calibrada já aponta para -Z. Não girá-la para -X:
+    // isso atravessava a tela e a fazia parecer muito maior.
+    // Nas capturas, a traseira ficou à direita e abaixo da empunhadura.
+    // Mantida a aproximação lateral; ajuste fino de altura: Y .08 -> .01.
+    // Aproximadamente 7-8 pixels abaixo no enquadramento de referência,
+    // sem alterar orientação, profundidade ou puxada.
+    if(equipment.bow==='classico')
+      return {x:-.16,y:.01,z:.13,yaw:0};
+    return {x:.015,y:0,z:.13,yaw:0};
+  }
+  function updateBowAim(){
+    if(!ready||!camera?.camera||!bowRoot||!sightAnchor)return;
+    const {w,h}=canvasSize(),dx=aimX-.5,dy=aimY-.45;
+    const depth=2.70,cssW=gl?.clientWidth||w,cssH=gl?.clientHeight||h;
+    const sightWorld=camera.camera.screenToWorld(aimX*cssW,aimY*cssH,depth);
+    const sightLocal=camera.getWorldTransform().clone().invert().transformPoint(sightWorld);
+    bowRoot.setLocalEulerAngles(-dy*2,dx*2,0);
+    const scale=bowRoot.getLocalScale().x;
+    const offset=bowRoot.getLocalRotation().transformVector(
+      sightAnchor.getLocalPosition().clone().mulScalar(scale));
+    bowRoot.setLocalPosition(sightLocal.sub(offset));
+    if(arrowLoaded){
+      const nock=arrowNockPose(),bow=GEAR_BY_ID[equipment.bow]?.type!=='Besta';
+      // Puxada axial da V1: a flecha recua em Z, nunca de lado em X.
+      arrowLoaded.setLocalPosition(nock.x,nock.y,
+        nock.z+(bow ? .12 : .10)*power);
+      arrowLoaded.setLocalEulerAngles(0,nock.yaw,0);
+    }
+    if(bowString)bowString.setLocalPosition(0,0,.19*power);
+  }
+  function update3D(dt){if(!ready)return;animT+=dt;
+    if(targetRoot)moveTarget();
+    updateBowAim();
+    if(projectile&&pendingShot){const shot=pendingShot;shot.elapsed+=dt;
+      const t=clamp(shot.elapsed/shot.duration,0,1),arc=shot.arcHeight;
+      const pos=new pc.Vec3().lerp(shot.start,shot.end,t);
+      pos.y+=4*arc*t*(1-t);
+      projectile.setPosition(pos);
+      const direction=new pc.Vec3(
+        shot.end.x-shot.start.x,
+        shot.end.y-shot.start.y+4*arc*(1-2*t),
+        shot.end.z-shot.start.z);
+      if(direction.lengthSq()>1e-7)
+        projectile.lookAt(pos.clone().add(direction.normalize()));
+      if(t>=1){
+        projectile.enabled=false;pendingShot=null;
+        if(arrowLoaded){updateBowAim();arrowLoaded.enabled=true;}
+        shot.done?.();
+      }
+    }
+  }
+  function impact({x=.5,y=.45,score=0,targetIndex=null}={}){
+    if(!ready||!targetRoot||score<=0)return;
+    const {w,h}=canvasSize(),m=getTargetMetrics(),ppu=m.r/1.34;
+    const setting=getSettings()||{};
+    const clone=setting.dualTargets&&targetIndex!==null?
+      (dualDiscs[targetIndex]||(!targetRoot.__model3d?[targetVisual,dualProcedural][targetIndex]:null)):null;
+    // Fixar no próprio disco (eixo local) para que a flecha o acompanhe.
+    const discScale=clone?.getLocalScale().x||1;
+    const offsetX=clone?.getLocalPosition().x||0;
+    const lx=(((x*w-m.x)/ppu)-offsetX)/discScale;
+    const ly=(-((y*h-m.y)/ppu))/discScale;
+    const e=new pc.Entity('Embedded arrow at impact');
+    (clone||targetRoot).addChild(e);e.setLocalPosition(lx,ly,.15/discScale);
+    const file=selectedArrow(),approved=modelAssets['models3d/equipment/'+file];
+    if(approved){
+      const mesh=approved.instantiateRenderEntity();mesh.name='Flecha GLB cravada';
+      const calibrated=appendArrowModel(e,mesh,file);
+      // A flecha cravada mantém o MESMO comprimento e espessura em
+      // unidades do mundo que a flecha disparada, em qualquer distância.
+      const targetScale=Math.max(.001,targetRoot.getLocalScale().x);
+      calibrated.setLocalScale(calibrated.getLocalScale().clone().mulScalar(.60/(targetScale*discScale)));
+      // Ponta 5 cm dentro da superfície frontal do disco.
+      const worldArrowLength=1.40*1.02*.60;
+      calibrated.setLocalPosition(.08,-.05,(worldArrowLength-.05)/(targetScale*discScale)+.052-.15/discScale);
+      impactMarks.push(e);return;
+    }
+    const dark=material('#1b2228',{metal:.45,rough:.35}),red=material('#e33d31'),white=material('#eee7cf');
+    tube('embedded carbon shaft',[[0,0,0],[.11,-.11,.37],[.23,-.18,.76]],[.015,.014,.011],dark,e,8);
+    tube('embedded red vane',[[.19,-.15,.65],[.27,-.16,.74],[.23,-.18,.77]],[.024,.026,.012],red,e,6);
+    tube('embedded white vane',[[.20,-.18,.64],[.29,-.20,.72],[.23,-.18,.77]],[.024,.027,.012],white,e,6);
+    impactMarks.push(e);
+  }
+  // A V1 usa projétil independente; a flecha encaixada não abandona o arco.
+  function createArrowProjectile(){
+    if(!app)return null;
+    const e=new pc.Entity('Flying arrow projectile - V1 mechanics');
+    root().addChild(e);
+    const file=selectedArrow(),resource=modelAssets['models3d/equipment/'+file];
+    if(resource){
+      const mesh=resource.instantiateRenderEntity();
+      const calibrated=appendArrowModel(e,mesh,file);
+      calibrated.setLocalScale(calibrated.getLocalScale().clone().mulScalar(.60));
+    }else{
+      const shaft=material('#14181d',{metal:.43,rough:.32}),
+        tip=material('#e4e7e8',{metal:.85,rough:.18});
+      const fallback=new pc.Entity('Fallback flying arrow');
+      fallback.setLocalScale(.60*5,.60*5,.60*1.02);e.addChild(fallback);
+      tube('projectile shaft',[[0,0,.53],[0,0,.18],[0,0,-.65]],
+        [.012,.012,.011],shaft,fallback,12);
+      primitive('cone','projectile point',[0,0,-.70],[.036,.09,.036],
+        tip,fallback,[90,0,0]);
+    }
+    e.enabled=false;
+    return e;
+  }
+  async function fire({x=.5,y=.45,power:shotPower=1}={}){
+    if(destroyed)return;
+    if(!ready||!arrowLoaded||!bowRoot?.enabled)
+      return new Promise(resolve=>setTimeout(resolve,370));
+    if(pendingShot)return;
+    if(!projectile)projectile=createArrowProjectile();
+    if(!projectile)return;
+    updateBowAim();
+    const {w,h}=canvasSize(),target=targetRoot.getPosition().clone(),m=getTargetMetrics();
+    const ppu=m.r/1.34,scale=targetRoot.getLocalScale().x;
+    const toX=target.x+((x*w-m.x)/ppu)*scale;
+    const toY=target.y-((y*h-m.y)/ppu)*scale;
+    const start=arrowLoaded.getPosition().clone();
+    const end=new pc.Vec3(toX,toY,target.z+.42*scale);
+    arrowLoaded.enabled=false;
+    projectile.enabled=true;projectile.setPosition(start);
+    projectile.lookAt(end);
+    const meters=getSettings()?.distance||30;
+    const duration=.43+.42*Math.pow(Math.max(10,meters)/80,.56)+.13*(1-shotPower);
+    const trajectory=Math.pow(Math.max(10,meters)/30,.45);
+    const arcHeight=Math.max(.37*trajectory,.28+Math.abs(end.y-start.y)*.42);
+    return new Promise(resolve=>{
+      pendingShot={start,end,arcHeight,elapsed:0,duration,done:resolve};
+    });
+  }
+
+  (async()=>{
+    try{
+      pc=await import('https://cdn.jsdelivr.net/npm/playcanvas@2.23.3/+esm');
+      if(destroyed)return;
+      gl=document.createElement('canvas');gl.className='world3d';
+      Object.assign(gl.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none',zIndex:'1'});
+      parent.insertBefore(gl,canvas);canvas.style.position='absolute';canvas.style.inset='0';canvas.style.zIndex='2';
+      app=new pc.Application(gl,{graphicsDeviceOptions:{alpha:true,antialias:true,preserveDrawingBuffer:false,preferWebGl2:true}});
+      app.setCanvasFillMode(pc.FILLMODE_NONE);app.setCanvasResolution(pc.RESOLUTION_AUTO);
+      app.graphicsDevice.maxPixelRatio=Math.min(window.devicePixelRatio||1,1.8);
+      app.scene.ambientLight=new pc.Color(.72,.73,.73);
+      app.scene.gammaCorrection=pc.GAMMA_SRGB;app.scene.toneMapping=pc.TONEMAP_ACES;
+      camera=new pc.Entity('Player first person camera');camera.addComponent('camera',{clearColor:new pc.Color(0,0,0,0),fov:41,nearClip:.04,farClip:100});
+      camera.setPosition(0,1.74,7);camera.lookAt(0,1.63,-9);
+      root().addChild(camera);
+      const sun=new pc.Entity('Soft daylight');sun.addComponent('light',{type:'directional',intensity:2.1,color:new pc.Color(1,.92,.79),castShadows:false});sun.setEulerAngles(35,-28,0);root().addChild(sun);
+      const fill=new pc.Entity('Cool bounced light');fill.addComponent('light',{type:'directional',intensity:.55,color:new pc.Color(.56,.78,1)});fill.setEulerAngles(150,30,0);root().addChild(fill);
+      buildWorld();app.start();app.resizeCanvas(parent.clientWidth,parent.clientHeight);
+      app.on('update',update3D);
+      const obs=new ResizeObserver(()=>{if(app)app.resizeCanvas(parent.clientWidth,parent.clientHeight);});obs.observe(parent);
+      app.on('destroy',()=>obs.disconnect());
+      ready=true;state.kind='PlayCanvas 3D';canvas.style.opacity='0';
+      parent.classList.add('engine-ready');
+      parent.dataset.sceneEngine='playcanvas';
+      parent.dispatchEvent(new CustomEvent('classmana:scene-ready',{detail:{engine:'playcanvas'}}));
+      const status=document.querySelector('.arena-status');if(status)status.textContent='✦ ARENA 3D ATIVA';
+      console.info('[ClassMana] Arena 3D iniciou com PlayCanvas.');
+    }catch(error){
+      console.warn('[ClassMana] WebGL indisponível, mantendo cena ilustrada:',error);
+      gl?.remove();gl=null;app?.destroy();app=null;ready=false;canvas.style.opacity='1';
+      parent.dataset.sceneEngine='fallback';
+      parent.dispatchEvent(new CustomEvent('classmana:scene-ready',{detail:{engine:'fallback',error:String(error)}}));
+      const status=document.querySelector('.arena-status');if(status)status.textContent='✦ MODO COMPATÍVEL';
+    }
+  })();
+  setHouse('A');
+  return state;
+}

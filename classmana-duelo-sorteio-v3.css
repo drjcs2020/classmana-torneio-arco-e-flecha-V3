@@ -1,0 +1,503 @@
+/* ClassMana — duelo entre casas: tela principal do sorteio. Ativa quando assets/ui/moldura-seletor.png existir. */
+#cm-draw-modal{position:fixed;inset:0;z-index:100500;overflow:auto;background:#03152be8 url("assets/v2/backgrounds/duel.webp") center/cover fixed no-repeat;color:#fff0c8;font-family:Georgia,serif}
+#cm-draw-modal *{box-sizing:border-box}
+#cm-draw-modal .cm-draw-shell{min-height:100vh;width:min(1540px,100%);margin:auto;padding:10px 24px 28px;display:flex;flex-direction:column;align-items:center;gap:6px}
+#cm-draw-modal button{cursor:pointer;font:inherit}
+#cm-draw-modal button:disabled{cursor:not-allowed;opacity:.48}
+#cm-draw-modal .cm-draw-top{display:flex;align-items:center;justify-content:space-between;width:100%;gap:8px}
+#cm-draw-modal .cm-draw-back,#cm-draw-modal .cm-draw-inbox{border:3px ridge #ffdb75;background:linear-gradient(#9e260c,#5d0b0c);border-radius:12px;padding:10px 20px;color:#ffedb9;font-weight:900;box-shadow:0 4px 12px #0009}
+#cm-draw-modal .cm-draw-inbox{background:linear-gradient(#6d4524,#24140b)}
+#cm-draw-modal .cm-draw-logo{height:clamp(68px,12vh,115px);max-width:32vw;object-fit:contain;filter:drop-shadow(0 4px 3px #000)}
+#cm-draw-modal .cm-draw-heading{font-size:clamp(21px,3.2vw,44px);font-weight:900;text-shadow:0 3px 2px #4b0b08,0 0 8px #ecab4a;text-align:center;padding:5px 26px;border:4px ridge #ffbd56;border-radius:12px;background:linear-gradient(#0c3979,#021839)}
+#cm-draw-modal .cm-draw-caption{font-size:clamp(14px,1.5vw,20px);font-weight:700;text-align:center;background:linear-gradient(#092b5b,#06172c);padding:6px 25px;border:2px ridge #ffcd6a;margin-top:-5px}
+#cm-draw-modal .cm-draw-panel{width:100%;background:linear-gradient(180deg,#061938ef,#112849f2);border:4px ridge #e9c067;border-radius:22px;box-shadow:0 8px 25px #0009;padding:12px;display:grid;gap:12px}
+#cm-draw-modal .cm-draw-house-title{margin:0;text-align:center;font-size:clamp(18px,2vw,30px);color:#ffe7a3}
+#cm-draw-modal .cm-draw-houses{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+#cm-draw-modal .cm-draw-house{border:3px ridge #f9c756;border-radius:14px;background:linear-gradient(105deg,#0a2b58,#124e8d);display:flex;align-items:center;justify-content:center;gap:9px;padding:6px 10px;min-height:77px;color:#fff1cd;font-weight:900;font-size:clamp(12px,1.4vw,24px);text-shadow:1px 2px #000}
+#cm-draw-modal .cm-draw-house[data-h="B"]{background:linear-gradient(105deg,#6c1215,#af2421)}#cm-draw-modal .cm-draw-house[data-h="C"]{background:linear-gradient(105deg,#053a23,#057944)}
+#cm-draw-modal .cm-draw-house img{height:69px;width:69px;object-fit:contain}
+#cm-draw-modal .cm-draw-house[disabled]{filter:grayscale(.7)}#cm-draw-modal .cm-draw-house.chosen{outline:3px solid #fff5b8;box-shadow:0 0 22px #ffd56b}
+#cm-draw-modal .cm-draw-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.45fr) minmax(190px,.9fr) minmax(0,1.1fr);gap:13px;align-items:stretch;min-height:clamp(320px,42vh,450px)}
+#cm-draw-modal .cm-draw-portrait{border:4px ridge #eeca6e;border-radius:15px;position:relative;overflow:hidden;background:radial-gradient(circle at center,#257acc,#091735);min-height:310px}
+#cm-draw-modal .cm-draw-portrait[data-h="B"]{background:radial-gradient(circle at center,#b64222,#310d1b)}#cm-draw-modal .cm-draw-portrait[data-h="C"]{background:radial-gradient(circle at center,#19885a,#04251b)}
+#cm-draw-modal .cm-draw-portrait>img{display:block;position:absolute;inset:0 0 64px;width:100%;height:calc(100% - 64px);object-fit:contain;object-position:center bottom;filter:drop-shadow(0 4px 6px #0008)}
+#cm-draw-modal .cm-draw-portrait .cm-draw-label{position:absolute;bottom:0;left:0;right:0;min-height:64px;text-align:center;padding:6px;background:linear-gradient(#16519d,#061c40);border-top:3px solid #f3bc52}
+#cm-draw-modal .cm-draw-portrait[data-h="B"] .cm-draw-label{background:linear-gradient(#a72d24,#450b14)}#cm-draw-modal .cm-draw-portrait[data-h="C"] .cm-draw-label{background:linear-gradient(#147c49,#053522)}
+#cm-draw-modal .cm-draw-label strong{display:block;font-size:clamp(15px,2vw,25px)}#cm-draw-modal .cm-draw-label small{display:block;font-size:clamp(11px,1vw,15px)}
+#cm-draw-modal .cm-draw-center{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;min-width:0}
+#cm-draw-modal .cm-draw-center img.cm-draw-vs{max-height:95px;max-width:52%;object-fit:contain}
+#cm-draw-modal .cm-draw-tube{width:100%;position:relative;max-width:580px;aspect-ratio:3.1;display:grid;place-items:center}
+#cm-draw-modal .cm-draw-tube>img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+#cm-draw-modal .cm-draw-tube .cm-draw-spin-face{width:35%;height:77%;object-fit:contain;z-index:1;filter:drop-shadow(0 1px 7px #000);transition:filter .1s}
+#cm-draw-modal .cm-draw-tube .cm-draw-select-frame{z-index:2;position:absolute;width:39%;height:110%;left:30.5%;top:-5%;object-fit:fill;pointer-events:none}
+#cm-draw-modal .cm-draw-tube.spinning .cm-draw-spin-face{filter:blur(2px) brightness(1.2)}
+#cm-draw-modal .cm-draw-spin-banner{width:92%;max-height:58px;object-fit:contain}
+#cm-draw-modal .cm-draw-action{border:4px ridge #ffd56f;border-radius:13px;padding:12px 20px;font-weight:900;font-size:clamp(15px,2vw,27px);color:#fff0bb;text-shadow:1px 3px #00401d;background:linear-gradient(#17bb44,#087b2d,#07441c);box-shadow:0 3px 8px #0008}
+#cm-draw-modal .cm-draw-list{border:3px ridge #f4c96e;border-radius:13px;background:linear-gradient(#10335d,#04152b);padding:7px;display:flex;flex-direction:column;gap:5px;max-height:450px;overflow:auto;min-width:0}
+#cm-draw-modal .cm-draw-list h3{margin:0;padding:10px 7px;background:linear-gradient(#9f2620,#4f0e14);text-align:center;font-size:clamp(12px,1.2vw,18px)}
+#cm-draw-modal .cm-draw-list-items{display:grid;gap:5px;overflow:auto;max-height:310px;padding:2px}
+#cm-draw-modal .cm-draw-list-item{font-size:clamp(12px,1.25vw,17px);padding:6px 8px;border:2px ridge #dba847;border-radius:8px;background:#08274c;display:flex;align-items:center;gap:6px;min-height:36px}
+#cm-draw-modal .cm-draw-list-item img{width:23px;height:24px;object-fit:contain}
+#cm-draw-modal .cm-draw-list-item.active{box-shadow:0 0 14px #ffcd42;background:linear-gradient(110deg,#784209,#bf8312);color:#fff8cf;font-weight:900}
+#cm-draw-modal .cm-draw-result{min-height:84px;display:none;border:4px ridge #f7cb74;border-radius:15px;background:linear-gradient(90deg,#570a18ee,#102c5fee);padding:10px;text-align:center}
+#cm-draw-modal .cm-draw-result.visible{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center}
+#cm-draw-modal .cm-draw-result h3{grid-column:1/-1;margin:0;font-size:clamp(18px,2.5vw,32px)}
+#cm-draw-modal .cm-draw-result-name{font-size:clamp(15px,2vw,25px);font-weight:900}
+#cm-draw-modal .cm-draw-muted{font:12px/1.4 system-ui,sans-serif;color:#ffe6a4;text-align:center;margin:0}
+#cm-draw-modal .cm-draw-transition{display:none;position:fixed;inset:0;z-index:5;background:#08152f url('assets/ui/tela-transicao-duelo.png') center/cover no-repeat;align-items:flex-end;justify-content:center;padding:50px}
+#cm-draw-modal .cm-draw-transition.active{display:flex;animation:cm-draw-zoom 5s ease-in-out infinite alternate}
+#cm-draw-modal .cm-draw-transition p{padding:15px 28px;background:#03152ddf;border:3px solid #f6cd70;border-radius:15px;font-size:clamp(15px,3vw,28px);font-weight:900;text-shadow:0 3px 4px #000}
+@keyframes cm-draw-zoom{from{background-size:100% auto}to{background-size:105% auto}}
+@media(max-width:950px){#cm-draw-modal .cm-draw-shell{padding:7px 8px 15px}#cm-draw-modal .cm-draw-grid{grid-template-columns:1fr 1.4fr 1fr;gap:4px;min-height:245px}#cm-draw-modal .cm-draw-portrait{min-height:230px}#cm-draw-modal .cm-draw-list{grid-column:1/-1;max-height:125px}#cm-draw-modal .cm-draw-list-items{grid-template-columns:repeat(3,1fr);max-height:75px}#cm-draw-modal .cm-draw-house img{height:43px;width:43px}#cm-draw-modal .cm-draw-house{min-height:53px}#cm-draw-modal .cm-draw-logo{height:64px}#cm-draw-modal .cm-draw-label strong{font-size:14px}#cm-draw-modal .cm-draw-center img.cm-draw-vs{max-height:60px}}
+@media(max-width:540px){#cm-draw-modal .cm-draw-grid{grid-template-columns:1fr 1fr}#cm-draw-modal .cm-draw-center{grid-column:1/-1;grid-row:2}#cm-draw-modal .cm-draw-list{grid-column:1/-1}#cm-draw-modal .cm-draw-portrait{min-height:210px}#cm-draw-modal .cm-draw-result.visible{grid-template-columns:1fr}#cm-draw-modal .cm-draw-house{flex-direction:column;font-size:11px}#cm-draw-modal .cm-draw-top button{font-size:12px;padding:5px}#cm-draw-modal .cm-draw-logo{height:55px}}
+
+/* Botão de sorteio: imagem PNG independente do ZIP, sem roleta desenhada. */
+#cm-draw-modal #cm-draw-roll:not(.reroll){width:min(100%,440px);aspect-ratio:1240/236;padding:0;border:0;background:transparent url("assets/ui/botao-sortear-adversario.png") center/100% 100% no-repeat;box-shadow:none;color:transparent;text-shadow:none;font-size:0}
+#cm-draw-modal #cm-draw-roll.reroll{width:min(100%,440px);font-size:clamp(14px,1.4vw,20px)}
+
+
+/* Ajuste 12/11: composição horizontal fixa, sem rolagem de página.
+   O redimensionamento é proporcional ao viewport; a lista mantém navegação interna invisível. */
+#cm-draw-modal{overflow:hidden!important;height:100dvh;width:100vw}
+#cm-draw-modal .cm-draw-shell{height:100dvh;min-height:0;max-height:100dvh;max-width:1600px;padding:5px 15px 7px;display:grid;grid-template-rows:minmax(42px,9%) minmax(45px,10%) minmax(26px,4.5%) minmax(0,1fr);justify-items:center;gap:2px;overflow:hidden}
+#cm-draw-modal .cm-draw-top{height:100%;align-self:stretch}
+#cm-draw-modal .cm-draw-back,#cm-draw-modal .cm-draw-inbox{padding:5px 13px;font-size:clamp(11px,1.25vw,18px)}
+#cm-draw-modal .cm-draw-logo{height:100%;max-height:100%;max-width:31vw}
+#cm-draw-modal .cm-draw-heading{height:100%;width:min(820px,77vw);padding:0;background:transparent;border:0;box-shadow:none;display:flex;align-items:center;justify-content:center;text-shadow:none}
+#cm-draw-modal .cm-draw-heading img{max-width:100%;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 3px 3px #0007)}
+#cm-draw-modal .cm-draw-caption{height:100%;width:min(750px,82vw);margin:0;padding:1px 12px;display:grid;place-items:center;font-size:clamp(12px,1.5vw,19px);white-space:nowrap}
+#cm-draw-modal .cm-draw-panel{height:100%;min-height:0;align-self:stretch;padding:8px 12px 7px;grid-template-rows:minmax(48px,15%) minmax(0,1fr) minmax(74px,18%) 14px;gap:5px;overflow:hidden;border-width:3px;border-radius:16px}
+#cm-draw-modal .cm-draw-houses{min-height:0;height:100%;gap:10px}
+#cm-draw-modal .cm-draw-house{min-height:0;height:100%;padding:2px 8px;font-size:clamp(11px,1.4vw,19px);border-radius:11px}
+#cm-draw-modal .cm-draw-house img{height:95%;width:auto;max-width:27%;object-fit:contain}
+#cm-draw-modal .cm-draw-grid{min-height:0;height:100%;grid-template-columns:minmax(0,1.13fr) minmax(0,1.43fr) minmax(170px,.93fr) minmax(0,1.12fr);gap:7px}
+#cm-draw-modal .cm-draw-portrait{min-height:0;height:100%;border-radius:10px;border-width:3px}
+#cm-draw-modal .cm-draw-portrait>img{inset:0 0 46px;width:100%;height:calc(100% - 46px);object-position:center center;object-fit:contain}
+#cm-draw-modal .cm-draw-portrait .cm-draw-label{height:46px;min-height:46px;padding:3px 2px}
+#cm-draw-modal .cm-draw-label strong{font-size:clamp(12px,1.35vw,19px)}
+#cm-draw-modal .cm-draw-label small{font-size:clamp(10px,.95vw,14px)}
+#cm-draw-modal .cm-draw-center{height:100%;gap:2px;justify-content:space-evenly;overflow:hidden}
+#cm-draw-modal .cm-draw-center img.cm-draw-vs{max-height:15%;max-width:40%;min-height:0}
+#cm-draw-modal .cm-draw-spin-banner{width:98%;max-height:13%;min-height:0}
+#cm-draw-modal .cm-draw-tube{width:100%;max-width:100%;max-height:46%;aspect-ratio:3.1}
+#cm-draw-modal #cm-draw-roll:not(.reroll){height:15%;max-height:62px;min-height:28px;aspect-ratio:auto;width:94%;background-size:100% 100%}
+#cm-draw-modal .cm-draw-muted{font-size:clamp(9px,.82vw,12px);line-height:1.1}
+#cm-draw-modal .cm-draw-list{height:100%;min-height:0;max-height:none;padding:3px;gap:3px;overflow:hidden}
+#cm-draw-modal .cm-draw-list h3{font-size:clamp(10px,.99vw,14px);margin:0;padding:5px 2px;line-height:1.05}
+#cm-draw-modal .cm-draw-list-items{min-height:0;max-height:none;overflow:auto;scrollbar-width:none;gap:3px}
+#cm-draw-modal .cm-draw-list-items::-webkit-scrollbar{display:none}
+#cm-draw-modal .cm-draw-list-item{min-height:26px;padding:2px 5px;font-size:clamp(10px,.98vw,15px)}
+#cm-draw-modal .cm-draw-list-item img{width:17px;height:19px}
+#cm-draw-modal .cm-draw-result{height:100%;min-height:0;display:grid;grid-template-columns:1fr minmax(155px,23%);grid-template-rows:46% 1fr;gap:1px 7px;align-items:center;visibility:hidden;padding:3px 12px}
+#cm-draw-modal .cm-draw-result.visible{visibility:visible;display:grid}
+#cm-draw-modal .cm-draw-result h3{grid-column:1/-1;height:100%;display:flex;justify-content:center;align-items:center}
+#cm-draw-modal .cm-draw-result h3 img{height:100%;width:min(620px,75%);object-fit:contain}
+#cm-draw-modal .cm-draw-result-name{font-size:clamp(13px,1.55vw,22px);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#cm-draw-modal #cm-draw-confirm{width:100%;height:100%;padding:0;border:0;box-shadow:none;font-size:0;color:transparent;background:transparent url('assets/ui/botao-confirmar.png') center/100% 100% no-repeat}
+#cm-draw-modal #cm-draw-roll:disabled{opacity:.8}
+#cm-draw-modal .cm-draw-house:disabled{opacity:.62}
+#cm-draw-modal .cm-draw-panel>.cm-draw-muted{align-self:center}
+@media (max-width:950px){
+ #cm-draw-modal .cm-draw-shell{padding:3px 5px 4px;grid-template-rows:minmax(37px,8%) minmax(38px,9%) minmax(23px,4%) minmax(0,1fr)}
+ #cm-draw-modal .cm-draw-panel{grid-template-rows:minmax(45px,14%) minmax(0,1fr) minmax(66px,17%) 12px;padding:5px;gap:3px}
+ #cm-draw-modal .cm-draw-grid{grid-template-columns:minmax(0,1.1fr) minmax(0,1.45fr) minmax(120px,.88fr) minmax(0,1.1fr);gap:4px}
+ #cm-draw-modal .cm-draw-portrait{min-height:0}
+ #cm-draw-modal .cm-draw-list{grid-column:auto;max-height:none}
+ #cm-draw-modal .cm-draw-list-items{display:grid;grid-template-columns:1fr;max-height:none}
+ #cm-draw-modal .cm-draw-house img{height:90%;width:auto}
+ #cm-draw-modal .cm-draw-center img.cm-draw-vs{max-height:18%}
+}
+@media(max-width:540px){
+ #cm-draw-modal .cm-draw-house{font-size:9px;flex-direction:row;padding:1px}
+ #cm-draw-modal .cm-draw-house img{height:60%;max-width:34%}
+ #cm-draw-modal .cm-draw-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) minmax(88px,.7fr) minmax(0,1fr);gap:2px}
+ #cm-draw-modal .cm-draw-center{grid-column:auto;grid-row:auto}
+ #cm-draw-modal .cm-draw-list{grid-column:auto}
+ #cm-draw-modal .cm-draw-label strong{font-size:10px}
+ #cm-draw-modal .cm-draw-label small{font-size:9px}
+ #cm-draw-modal .cm-draw-result.visible{grid-template-columns:1fr 120px}
+ #cm-draw-modal .cm-draw-caption{white-space:normal;text-align:center}
+}
+
+/* Rodapé final: banner artístico + botão Continuar. Sem nome duplicado ou aviso técnico. */
+#cm-draw-modal .cm-draw-panel{grid-template-rows:minmax(48px,15%) minmax(0,1fr) minmax(65px,15%); }
+#cm-draw-modal .cm-draw-result,#cm-draw-modal .cm-draw-result.visible{
+  grid-template-columns:minmax(0,1fr) minmax(185px,30%);
+  grid-template-rows:1fr;
+  gap:12px;
+  padding:4px 14px;
+  align-items:center;
+}
+#cm-draw-modal .cm-draw-result h3{
+  grid-column:1;
+  grid-row:1;
+  min-width:0;
+  margin:0;
+}
+#cm-draw-modal .cm-draw-result h3 img{max-width:100%;width:100%;height:100%;object-fit:contain}
+#cm-draw-modal #cm-draw-confirm{
+  grid-column:2;
+  grid-row:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:43px;
+  height:100%;
+  width:100%;
+  border:3px solid #f5cc56;
+  border-radius:12px;
+  background:linear-gradient(180deg,#1eae39 0%,#08771e 54%,#014c15 100%);
+  box-shadow:inset 0 2px 0 #afffa9,0 3px 0 #643906,0 0 10px #ffc62988;
+  color:#fff8dc;
+  text-shadow:0 2px 2px #00350d,1px 1px #663809;
+  font-size:clamp(15px,1.8vw,26px);
+  font-weight:900;
+  line-height:1;
+  cursor:pointer;
+}
+#cm-draw-modal #cm-draw-confirm:hover{filter:brightness(1.12)}
+#cm-draw-modal #cm-draw-confirm:focus-visible{outline:3px solid #fff;outline-offset:2px}
+@media(max-width:950px){
+  #cm-draw-modal .cm-draw-panel{grid-template-rows:minmax(45px,14%) minmax(0,1fr) minmax(60px,15%)}
+  #cm-draw-modal .cm-draw-result.visible{grid-template-columns:minmax(0,1fr) minmax(140px,29%)}
+}
+@media(max-width:540px){
+  #cm-draw-modal .cm-draw-result.visible{grid-template-columns:minmax(0,1fr) minmax(92px,30%);gap:4px;padding:2px}
+  #cm-draw-modal #cm-draw-confirm{min-height:30px;font-size:12px;border-width:2px}
+}
+
+
+/* Layout compacto: topo sem logo, banner sobe, rodapé reduzido, viewport única. */
+#cm-draw-modal{height:100dvh;overflow:hidden!important}
+#cm-draw-modal .cm-draw-shell{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-rows:clamp(30px,5.2dvh,42px) clamp(46px,9dvh,68px) clamp(22px,4.4dvh,29px) minmax(0,1fr);
+  gap:1px;
+  align-items:stretch;
+  justify-items:center;
+  padding:3px 12px 5px;
+  width:min(1540px,100%);
+  height:100dvh;
+  min-height:0;
+  max-height:100dvh;
+  overflow:hidden;
+}
+#cm-draw-modal .cm-draw-top{
+  grid-row:1;
+  position:relative;
+  align-self:center;
+  height:100%;
+  width:100%;
+  justify-content:space-between;
+}
+#cm-draw-modal .cm-draw-back,
+#cm-draw-modal .cm-draw-inbox{
+  border-width:2px;
+  border-radius:9px;
+  font-size:clamp(11px,1.05vw,15px);
+  padding:2px 11px;
+  min-height:26px;
+  max-height:36px;
+  box-shadow:0 2px 5px #0008;
+}
+#cm-draw-modal .cm-draw-heading{
+  grid-row:2;
+  width:min(730px,72vw);
+  height:100%;
+  padding:0;
+  margin:0;
+  align-self:center;
+}
+#cm-draw-modal .cm-draw-heading img{height:100%;width:100%;object-fit:contain}
+#cm-draw-modal .cm-draw-caption{
+  grid-row:3;
+  margin:0;
+  height:100%;
+  width:min(780px,82vw);
+  padding:0 10px;
+  line-height:1.05;
+  font-size:clamp(12px,1.35vw,17px);
+}
+#cm-draw-modal .cm-draw-panel{
+  grid-row:4;
+  align-self:stretch;
+  height:100%;
+  min-height:0;
+  max-height:100%;
+  grid-template-rows:clamp(48px,11.5%,70px) minmax(0,1fr) clamp(40px,9.3%,58px);
+  gap:5px;
+  padding:6px 10px 7px;
+  overflow:hidden;
+}
+#cm-draw-modal .cm-draw-houses{height:100%;min-height:0}
+#cm-draw-modal .cm-draw-house{height:100%;min-height:0;line-height:1.05}
+#cm-draw-modal .cm-draw-grid{
+  height:100%;
+  min-height:0!important;
+  grid-template-columns:minmax(0,1.04fr) minmax(0,1.7fr) minmax(0,.86fr) minmax(0,1.08fr);
+  gap:7px;
+}
+#cm-draw-modal .cm-draw-portrait{min-height:0;max-height:100%}
+#cm-draw-modal .cm-draw-portrait .cm-draw-label{
+  height:54px;
+  min-height:54px;
+  padding:4px 2px 6px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  overflow:hidden;
+}
+#cm-draw-modal .cm-draw-label strong{font-size:clamp(12px,1.38vw,19px);line-height:1.1}
+#cm-draw-modal .cm-draw-label small{font-size:clamp(9px,.97vw,13px);line-height:1.2;white-space:normal}
+#cm-draw-modal .cm-draw-portrait>img{
+  height:calc(100% - 54px);
+  inset:0 0 54px;
+  object-fit:contain;
+}
+#cm-draw-modal #cm-draw-left>img{transform:scaleX(-1)}
+#cm-draw-modal #cm-draw-right>img{transform:none}
+#cm-draw-modal .cm-draw-center{height:100%;min-height:0;justify-content:space-between;gap:3px;}
+#cm-draw-modal .cm-draw-list{height:100%;min-height:0;overflow:hidden}
+#cm-draw-modal .cm-draw-list-items{flex:1;min-height:0;overflow-y:auto}
+#cm-draw-modal .cm-draw-result,
+#cm-draw-modal .cm-draw-result.visible{
+  height:100%;
+  min-height:0;
+  grid-template-columns:minmax(0,1fr) minmax(130px,26%);
+  grid-template-rows:1fr;
+  gap:9px;
+  padding:2px 10px;
+  border-width:2px;
+  border-radius:10px;
+}
+#cm-draw-modal .cm-draw-result h3{
+  grid-column:1;
+  grid-row:1;
+  height:100%;
+  max-height:100%;
+  overflow:hidden;
+}
+#cm-draw-modal .cm-draw-result h3 img{
+  width:100%;
+  height:100%;
+  max-height:100%;
+  object-fit:contain;
+}
+#cm-draw-modal #cm-draw-confirm{
+  grid-column:2;
+  grid-row:1;
+  height:100%;
+  min-height:0;
+  max-height:42px;
+  align-self:center;
+  font-size:clamp(13px,1.35vw,19px);
+  border-width:2px;
+  border-radius:9px;
+}
+@media(max-width:950px){
+ #cm-draw-modal .cm-draw-shell{grid-template-rows:30px 51px 23px minmax(0,1fr);padding:2px 6px 4px}
+ #cm-draw-modal .cm-draw-panel{grid-template-rows:clamp(42px,11%,57px) minmax(0,1fr) clamp(38px,10%,48px);gap:3px;padding:4px}
+ #cm-draw-modal .cm-draw-grid{grid-template-columns:minmax(0,1.04fr) minmax(0,1.66fr) minmax(0,.84fr) minmax(0,1.08fr);gap:4px}
+ #cm-draw-modal .cm-draw-portrait .cm-draw-label{height:48px;min-height:48px}
+ #cm-draw-modal .cm-draw-portrait>img{height:calc(100% - 48px);inset:0 0 48px}
+ #cm-draw-modal .cm-draw-result.visible{grid-template-columns:minmax(0,1fr) minmax(110px,26%)}
+}
+
+
+/* Resultado: arte no centro (substitui o texto), rodapé só com botão centralizado.
+   Remove o banner inferior cortado e preserva a altura de tela única. */
+#cm-draw-modal .cm-draw-center .cm-draw-muted.is-result-art{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  height:clamp(25px,5.8dvh,44px);
+  flex:0 0 auto;
+  margin:0;
+  padding:0;
+  overflow:visible;
+}
+#cm-draw-modal .cm-draw-status-art{
+  display:block;
+  width:min(92%,370px);
+  height:100%;
+  object-fit:contain;
+  filter:drop-shadow(0 2px 3px #0009);
+}
+#cm-draw-modal .cm-draw-result,
+#cm-draw-modal .cm-draw-result.visible{
+  display:flex;
+  flex-direction:row;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-height:0;
+  height:100%;
+  padding:2px 8px;
+  gap:0;
+  overflow:hidden;
+}
+#cm-draw-modal .cm-draw-result:not(.visible){visibility:hidden;pointer-events:none}
+#cm-draw-modal .cm-draw-result.visible{visibility:visible}
+#cm-draw-modal #cm-draw-confirm{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:static;
+  grid-column:auto;
+  grid-row:auto;
+  flex:0 1 clamp(160px,24vw,275px);
+  width:clamp(160px,24vw,275px);
+  max-width:90%;
+  height:clamp(31px,5.1dvh,42px);
+  min-height:0;
+  max-height:42px;
+  margin:0 auto;
+  padding:0 12px;
+  line-height:1;
+  font-size:clamp(13px,1.45vw,19px);
+  color:#fff8dc;
+  background:linear-gradient(180deg,#1eae39,#08771e 54%,#014c15);
+  border:2px solid #f5cc56;
+  box-shadow:inset 0 2px 0 #afffa9,0 2px 0 #643906,0 0 9px #ffc62988;
+  text-shadow:0 2px 2px #00350d;
+}
+@media(max-width:950px){
+  #cm-draw-modal #cm-draw-confirm{width:clamp(130px,23vw,220px);flex-basis:clamp(130px,23vw,220px);font-size:clamp(12px,1.6vw,16px)}
+  #cm-draw-modal .cm-draw-center .cm-draw-muted.is-result-art{height:clamp(22px,5dvh,34px)}
+}
+
+
+/* Rodape sempre presente; somente a ação depende do sorteio. */
+#cm-draw-modal .cm-draw-result,
+#cm-draw-modal .cm-draw-result:not(.visible),
+#cm-draw-modal .cm-draw-result.visible{
+  display:flex!important;
+  visibility:visible!important;
+  pointer-events:auto;
+  justify-content:center;
+  align-items:center;
+  width:100%;
+}
+#cm-draw-modal #cm-draw-confirm{
+  display:flex!important;
+  visibility:visible!important;
+  opacity:1;
+  max-width:290px;
+  margin:0 auto;
+}
+#cm-draw-modal #cm-draw-confirm:disabled{
+  opacity:.58;
+  filter:saturate(.4);
+  cursor:not-allowed;
+}
+#cm-draw-modal #cm-draw-confirm:not(:disabled){opacity:1;filter:none}
+#cm-draw-modal #cm-draw-right-img:not([src]),
+#cm-draw-modal #cm-draw-spin-img:not([src]){visibility:hidden}
+
+/* Somente a imagem-base do carrossel é espelhada para colocar o emblema à direita.
+   Retrato alternado e moldura do seletor permanecem intactos. */
+#cm-draw-modal .cm-draw-tube>img:first-child{transform:scaleX(-1)}
+/* Brasões oficiais: sem desbotamento ou filtro cinza na casa própria. */
+#cm-draw-modal .cm-draw-house:disabled{opacity:1;filter:none}
+#cm-draw-modal .cm-draw-house img{height:94%;max-width:20%;width:auto;object-fit:contain;filter:none}
+
+/* Refinamento 13/11: duas molduras de retrato com largura idêntica. */
+#cm-draw-modal .cm-draw-grid{
+  grid-template-columns:minmax(0,1.07fr) minmax(0,1.58fr) minmax(0,1.07fr) minmax(0,1.08fr)!important;
+}
+#cm-draw-modal #cm-draw-left,
+#cm-draw-modal #cm-draw-right{width:100%;min-width:0;height:100%;}
+/* Apenas o desafiante à esquerda aponta para a direita;
+   apenas o adversário à direita aponta para a esquerda. */
+#cm-draw-modal #cm-draw-left-img{transform:none!important;}
+#cm-draw-modal #cm-draw-right-img{transform:scaleX(-1)!important;}
+/* Brasões não podem ser espelhados: só as figuras dos arqueiros. */
+#cm-draw-modal #cm-draw-right[data-h] #cm-draw-right-img[src*="/crests/"]{transform:none!important;}
+
+/* Roda animada verdadeira: 12 retratos separados, repetidos em duas metades.
+   O tubo original fica no fundo e a moldura original permanece na frente. */
+#cm-draw-modal .cm-draw-tube{isolation:isolate;overflow:visible}
+#cm-draw-modal .cm-draw-tube .cm-draw-tube-art{
+  z-index:0;transform:scaleX(-1);
+}
+#cm-draw-modal .cm-draw-reel-window{
+  position:absolute;z-index:1;
+  inset:19% 18% 19% 16%;
+  overflow:hidden;
+  border-radius:7px;
+  background:linear-gradient(90deg,#09264eec,#275590df 40%,#12294ce9);
+  box-shadow:inset 0 0 17px #0c1c34;
+  display:none;
+}
+#cm-draw-modal .cm-draw-tube.has-reel .cm-draw-reel-window{display:block}
+#cm-draw-modal .cm-draw-reel-track{
+  height:100%;
+  display:flex;
+  align-items:center;
+  gap:0;
+  width:max-content;
+  will-change:transform;
+  animation:cm-draw-reel-flow 2.6s linear infinite;
+}
+#cm-draw-modal .cm-draw-reel-track img{
+  display:block;position:static;
+  width:clamp(52px,5vw,85px);
+  height:100%;flex:none;
+  object-fit:cover;object-position:center 30%;
+  filter:drop-shadow(0 1px 3px #000a);
+}
+@keyframes cm-draw-reel-flow{
+  from{transform:translateX(0)}
+  to{transform:translateX(-50%)}
+}
+#cm-draw-modal .cm-draw-tube.spinning .cm-draw-reel-track{filter:brightness(1.12)}
+#cm-draw-modal .cm-draw-tube .cm-draw-spin-face{
+  z-index:3;
+  left:32%;top:10%;width:36%;height:80%;
+  object-fit:contain;
+  pointer-events:none;
+}
+#cm-draw-modal .cm-draw-tube .cm-draw-select-frame{z-index:4;pointer-events:none}
+#cm-draw-modal .cm-draw-tube .cm-draw-mini-portrait{
+  z-index:5;
+  position:absolute;inset:auto 1% auto auto;
+  width:21%;height:83%;object-fit:contain;
+  filter:drop-shadow(0 2px 3px #000);
+  transform:none!important;pointer-events:none;
+}
+#cm-draw-modal .cm-draw-tube.finished .cm-draw-reel-window{display:none}
+#cm-draw-modal .cm-draw-tube.finished .cm-draw-spin-face{filter:none}
+
+/* A pequena linha azul residual pertence à área inferior da imagem do banner;
+   recortar apenas essa borda sem interferir no resto da interface. */
+#cm-draw-modal .cm-draw-muted.is-result-art{overflow:hidden!important;}
+#cm-draw-modal .cm-draw-status-art{
+  height:112%;max-height:none;
+  object-fit:contain;object-position:top center;
+  clip-path:inset(0 0 12% 0);
+}
+@media(max-width:950px){
+ #cm-draw-modal .cm-draw-grid{
+  grid-template-columns:minmax(0,1.07fr) minmax(0,1.58fr) minmax(0,1.07fr) minmax(0,1.08fr)!important;
+ }
+ #cm-draw-modal .cm-draw-reel-track img{width:clamp(34px,5vw,64px)}
+}
+
+/* O avatar vencedor nasce no CENTRO da moldura, nunca na lateral do tubo. */
+#cm-draw-modal .cm-draw-tube .cm-draw-mini-portrait{display:none!important}
+#cm-draw-modal .cm-draw-tube:not(.finished) .cm-draw-spin-face{visibility:hidden!important;opacity:0}
+#cm-draw-modal .cm-draw-tube.finished .cm-draw-spin-face{
+ visibility:visible!important;
+ opacity:1;
+ transform-origin:center center;
+ animation:cm-draw-winner-reveal .65s cubic-bezier(.12,.8,.3,1) both;
+}
+@keyframes cm-draw-winner-reveal{
+ from{opacity:0;transform:scale(.35);filter:brightness(1.8)}
+ 70%{opacity:1;transform:scale(1.12)}
+ to{opacity:1;transform:scale(1);filter:none}
+}

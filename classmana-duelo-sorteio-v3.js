@@ -1,0 +1,223 @@
+/* Duelo entre Casas V3 — pronto para o ZIP em assets/ui/. */
+(function(){
+'use strict';
+var BASE='assets/ui/';
+var H={A:['Águia Dourada','aguia','assets/ui/crests/brasao-aguia-dourada.png?v=20261112-oficial'],B:['Leão de Fogo','leao','assets/ui/crests/brasao-leao-de-fogo.png?v=20261112-oficial'],C:['Dragão de Esmeralda','dragao','assets/ui/crests/brasao-dragao-esmeralda.png?v=20261112-oficial']};
+var R=window.CLASSMANA_ROSTER||{},modal=null,home='',enemy='',picked=null,busy=false,ready=false,audio,drawLocked=false;
+function el(id){return document.getElementById(id)}
+function label(h){return '4º '+h+' · '+H[h][0]}
+function rosterId(id){return /^[ABC]\d\d$/.test(id||'') && !!R[id[0]]?.[Number(id.slice(1))-1]}
+function current(){var a=[el('player')?.value,el('cm-quick-player')?.value,sessionStorage.getItem('cm_active_student_v2'),localStorage.getItem('cm_v2_lobby_student')];return a.find(rosterId)||''}
+function list(h){return (R[h]||[]).map(function(n,i){return {id:h+String(i+1).padStart(2,'0'),name:n}})}
+function store(k){try{return JSON.parse(localStorage.getItem(k)||'{}')||{}}catch(e){return {}}}
+/* Os nomes do elenco oficial são associados ao retrato feminino/masculino.
+   A identidade real do aluno não é inferida em geral: esta tabela é específica do elenco do torneio.
+   A escolha explícita de avatar pelo aluno continua tendo prioridade. */
+var FEMALE_ROSTER={
+ A:['Alice S.','Aline F.','Ana G.','Debora L.','Eloa B.','Isabela P.','Mayara M.','Sophia L.','Valentine T.'],
+ B:['Agatha S.','Ana S.','Ana C.','Dafini C.','Heloisa S.','Isabelly M.','Lais L.','Livia S.','Manuele C.','Maria V.','Maysa A.','Nathalia L.','Sofia G.'],
+ C:['Agatha C.','Alice O.','Ana M.','Angela C.','Emily B.','Ester A.','Isabella S.','Lavinia R.','Lavinia S.','Maria S.','Maria C.','Ralinne E.','Samantha S.','Sophia R.']
+};
+function gender(id){
+ var saved=store('classmana-student-archer-genders-v2')[id];
+ if(saved==='m'||saved==='f')return saved;
+ var h=id?.[0],idx=Number(id?.slice(1))-1,name=R[h]?.[idx];
+ if(!name)return 'm';
+ return FEMALE_ROSTER[h]?.includes(name)?'f':'m';
+}
+function drawKey(){return 'classmana-duel-once-v3:'+home}
+function previousDraw(){try{var p=JSON.parse(sessionStorage.getItem(drawKey())||'null');return p&&p.enemy&&p.id&&p.timestamp&&Date.now()-p.timestamp<10*60*1000?{enemy:p.enemy,student:list(p.enemy).find(function(x){return x.id===p.id})}:null}catch(e){return null}}
+function rememberDraw(){try{sessionStorage.setItem(drawKey(),JSON.stringify({enemy:enemy,id:picked.id,timestamp:Date.now()}))}catch(e){}}
+function releaseDraw(){try{sessionStorage.removeItem(drawKey())}catch(e){}}
+
+function portrait(img,h,sex){var g=sex==='f'?'f':'m';img.onerror=function(){img.onerror=null;img.src='assets/v2/heroes/'+H[h][1]+'-'+g+'.webp'};img.src=BASE+'retrato-'+H[h][1]+'-'+g+'.png'}
+function t(id,value){el(id).textContent=value}
+function loadReel(h){
+ var track=el('cm-draw-reel-track');track.replaceChildren();
+ // Doze retratos individuais: a animação move as imagens, não a ilustração do tubo.
+ for(var i=0;i<12;i++){
+  var item=document.createElement('img');item.alt='';portrait(item,h,i%2?'f':'m');track.append(item);
+ }
+ el('cm-draw-tube').classList.add('has-reel');
+ el('cm-draw-tube').classList.remove('finished','spinning');
+ track.style.animationDuration='2.6s';
+}
+
+function bleep(end){try{audio=audio||new (window.AudioContext||window.webkitAudioContext)();var osc=audio.createOscillator(),gain=audio.createGain();osc.frequency.value=end?850:430;gain.gain.setValueAtTime(.03,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.08);osc.connect(gain);gain.connect(audio.destination);osc.start();osc.stop(audio.currentTime+.085)}catch(e){}}
+function selectedIndex(n){if(window.crypto&&window.crypto.getRandomValues){var a=new Uint32Array(1),m=Math.floor(4294967296/n)*n;do{window.crypto.getRandomValues(a)}while(a[0]>=m);return a[0]%n}return Math.floor(Math.random()*n)}
+function make(){
+ modal=document.createElement('div');modal.id='cm-draw-modal';modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');
+ modal.innerHTML=[
+ '<div class="cm-draw-shell"><div class="cm-draw-top">',
+ '<button class="cm-draw-back" id="cm-draw-back" type="button">⬅ VOLTAR</button>',
+ '<button class="cm-draw-inbox" id="cm-draw-inbox" type="button">🔔 Meus desafios</button></div>',
+ '<div class="cm-draw-heading"><img src="assets/ui/challenge/banner-duelo-entre-casas.png" alt="DUELO ENTRE CASAS"></div>',
+ '<div class="cm-draw-caption">ESCOLHA A CASA E SORTEIE O ADVERSÁRIO</div>',
+ '<section class="cm-draw-panel">',
+ '<div class="cm-draw-houses" id="cm-draw-houses"></div><div class="cm-draw-grid">',
+ '<div class="cm-draw-portrait" id="cm-draw-left"><img id="cm-draw-left-img" alt="Desafiante"><div class="cm-draw-label"><strong id="cm-draw-left-name"></strong><small id="cm-draw-left-house"></small></div></div>',
+ '<div class="cm-draw-center"><img class="cm-draw-vs" src="assets/v2/frames/versus.webp" alt="VS">',
+ '<img class="cm-draw-spin-banner" src="assets/ui/banner-sorteio.png" alt="Sorteio do Adversário">',
+ '<div class="cm-draw-tube" id="cm-draw-tube"><img class="cm-draw-tube-art" src="assets/ui/carrossel-tubo.png" alt="">',
+ '<div class="cm-draw-reel-window" aria-hidden="true"><div class="cm-draw-reel-track" id="cm-draw-reel-track"></div></div>',
+ '<img id="cm-draw-spin-img" class="cm-draw-spin-face" alt="Retrato selecionado">',
+ '<img class="cm-draw-select-frame" src="assets/ui/moldura-seletor.png" alt=""></div>',
+ '<button id="cm-draw-roll" class="cm-draw-action" type="button" disabled>SORTEAR ADVERSÁRIO</button>',
+ '<span class="cm-draw-muted" id="cm-draw-state" aria-live="polite">Selecione uma casa rival.</span></div>',
+ '<div class="cm-draw-portrait" id="cm-draw-right"><img id="cm-draw-right-img" alt="Adversário"><div class="cm-draw-label"><strong id="cm-draw-right-name">CASA RIVAL</strong><small id="cm-draw-right-house"></small></div></div>',
+ '<div class="cm-draw-list"><h3 id="cm-draw-list-head">ALUNOS DA CASA RIVAL</h3><div class="cm-draw-list-items" id="cm-draw-list-items"></div></div></div>',
+ '<div class="cm-draw-result" id="cm-draw-result">',
+ '<button type="button" id="cm-draw-confirm" class="cm-draw-action" disabled>CONTINUAR</button></div>',
+ '</section>',
+ '<div id="cm-draw-transition" class="cm-draw-transition"><p>⚔ PREPARANDO A PARTIDA... ⚔</p></div></div>'
+ ].join('');
+ document.body.append(modal);
+ el('cm-draw-back').onclick=close;
+ el('cm-draw-inbox').onclick=function(){close();el('cm-open-challenges')?.click()};
+ el('cm-draw-roll').onclick=draw;
+ el('cm-draw-confirm').onclick=confirmMatch;
+}
+function close(){if(busy)return;window.classmanaRouletteAudio?.stop();modal?.remove();modal=null;enemy='';picked=null;document.body.style.removeProperty('overflow')}
+function open(){
+ window.classmanaRouletteAudio?.stop();
+ home=current();if(!rosterId(home))return false;
+ if(modal)modal.remove();
+ make();busy=false;enemy='';picked=null;drawLocked=false;document.body.style.overflow='hidden';
+ var h=home[0],people=R[h],id=Number(home.slice(1))-1;
+ el('cm-draw-left').dataset.h=h;
+ portrait(el('cm-draw-left-img'),h,gender(home)||store('classmana-archer-skins-v2')[h]||'m');
+ t('cm-draw-left-name',people[id]);t('cm-draw-left-house',label(h));t('cm-draw-right-house','Selecione uma casa rival');
+ el('cm-draw-right-img').removeAttribute('src');el('cm-draw-right-img').style.visibility='hidden';
+ el('cm-draw-spin-img').removeAttribute('src');el('cm-draw-spin-img').style.visibility='hidden';
+ el('cm-draw-reel-track').replaceChildren();el('cm-draw-tube').classList.remove('has-reel','finished','spinning');
+ el('cm-draw-confirm').disabled=true;
+ var houses=el('cm-draw-houses');
+ Object.keys(H).forEach(function(k){
+  var btn=document.createElement('button');btn.type='button';btn.className='cm-draw-house';btn.dataset.h=k;btn.disabled=k===h;
+  var img=document.createElement('img');img.alt='';img.src=H[k][2];
+  var txt=document.createElement('span');txt.textContent=label(k)+(k===h?' · SUA CASA':'');
+  btn.append(img,txt);btn.onclick=function(){selectHouse(k)};houses.append(btn);
+ });
+ var saved=previousDraw();if(saved?.student){selectHouse(saved.enemy);finishDraw(saved.student,true)}
+ return true;
+}
+function selectHouse(h){
+ if(busy||drawLocked||h===home[0])return;enemy=h;picked=null;
+ document.querySelectorAll('#cm-draw-houses button').forEach(function(b){b.classList.toggle('chosen',b.dataset.h===h)});
+ el('cm-draw-result').classList.remove('visible');el('cm-draw-confirm').disabled=true;el('cm-draw-right').dataset.h=h;
+ // Antes do sorteio, a casa rival é representada somente pelo brasão oficial.
+ el('cm-draw-right-img').onerror=null;el('cm-draw-right-img').style.visibility='visible';el('cm-draw-right-img').src=H[h][2];
+ // Sem miniatura lateral: o rosto vencedor só surge dentro da moldura dourada após o sorteio.
+ el('cm-draw-spin-img').removeAttribute('src');el('cm-draw-spin-img').style.visibility='hidden';loadReel(h);
+ t('cm-draw-right-name','CASA RIVAL');t('cm-draw-right-house',label(h));
+ t('cm-draw-list-head','ALUNOS DO '+label(h).toUpperCase());el('cm-draw-state').classList.remove('is-result-art');t('cm-draw-state','Pronto para sortear.');
+ var holder=el('cm-draw-list-items');holder.replaceChildren();
+ list(h).forEach(function(p){
+  var row=document.createElement('div');row.className='cm-draw-list-item';row.dataset.studentId=p.id;
+  var icon=document.createElement('img');icon.src=BASE+'icone-aluno.png';icon.alt='';
+  var name=document.createElement('span');name.textContent=p.name;row.append(icon,name);holder.append(row);
+ });
+ el('cm-draw-roll').disabled=!R[h]?.length;el('cm-draw-roll').classList.remove('reroll');el('cm-draw-roll').textContent='SORTEAR ADVERSÁRIO';
+}
+function finishDraw(student,restored){
+ window.classmanaRouletteAudio?.stop();
+ picked=student;drawLocked=true;busy=false;
+ el('cm-draw-tube').classList.remove('spinning','has-reel');el('cm-draw-tube').classList.add('finished');
+ el('cm-draw-spin-img').style.visibility='visible';
+ var actual=gender(picked.id);
+ portrait(el('cm-draw-spin-img'),enemy,actual);
+ portrait(el('cm-draw-right-img'),enemy,actual);
+ t('cm-draw-right-name',picked.name);t('cm-draw-right-house',label(enemy));
+ var state=el('cm-draw-state'),banner=document.createElement('img');
+ banner.src=BASE+'banner-adversario-escolhido.png';
+ banner.alt='ADVERSÁRIO ESCOLHIDO!';
+ banner.className='cm-draw-status-art';
+ state.replaceChildren(banner);
+ state.classList.add('is-result-art');
+ document.querySelectorAll('#cm-draw-houses button').forEach(function(b){b.disabled=true});
+ document.querySelectorAll('.cm-draw-list-item').forEach(function(row){
+  var winner=row.dataset.studentId===picked.id;row.classList.toggle('active',winner);
+  if(winner&&!row.querySelector('.cm-draw-picked-icon')){
+   var icon=document.createElement('img');icon.className='cm-draw-picked-icon';
+   icon.alt='Escolhido';icon.src=BASE+'icone-confirmado.png';row.append(icon);
+   row.scrollIntoView({block:'nearest'});
+  }
+ });
+ el('cm-draw-result').classList.add('visible');el('cm-draw-confirm').disabled=false;
+ el('cm-draw-roll').disabled=true;el('cm-draw-roll').textContent='SORTEIO CONCLUÍDO';
+ if(!restored){rememberDraw();bleep(true)}
+}
+async function draw(){
+ if(!enemy||busy||drawLocked)return;
+ var pool=list(enemy);if(!pool.length)return;
+ busy=true;var selected=pool[selectedIndex(pool.length)];
+ el('cm-draw-roll').disabled=true;el('cm-draw-result').classList.remove('visible');
+ el('cm-draw-tube').classList.add('spinning');t('cm-draw-right-name','SORTEANDO...');
+ window.classmanaRouletteAudio?.start();
+ var steps=[60,65,72,80,90,105,125,150,180,220,275,345,450,590,700],sex='m';
+ for(var wait of steps){
+  sex=sex==='m'?'f':'m';
+  portrait(el('cm-draw-right-img'),enemy,sex);
+  el('cm-draw-reel-track').style.animationDuration=Math.max(.24,wait/300)+'s';
+  await new Promise(function(resolve){setTimeout(resolve,wait)});
+ }
+ finishDraw(selected,false);
+}
+
+function configure(){
+ var mode=el('mode'),scope=el('team-scope'),house=el('opponent-house'),field=el('rival'),level=el('challenge-level');
+ if(!mode||!scope||!house||!field||!level||!picked)return false;
+ // Neste modo, a escolha é por CASA: não filtrar por equipes internas.
+ mode.value='challenge_team';scope.value='other';
+ mode.dispatchEvent(new Event('change',{bubbles:true}));
+ house.value=enemy;house.dispatchEvent(new Event('change',{bubbles:true}));
+ if(!Array.from(field.options).some(function(option){return option.value===picked.id}))return false;
+ field.value=picked.id;
+ level.value='iniciante';level.dispatchEvent(new Event('change',{bubbles:true}));
+ return field.value===picked.id;
+}
+function confirmMatch(){
+ if(!picked||busy||!drawLocked)return;
+ if(!configure()){t('cm-draw-state','Adversário não encontrado na lista válida da partida.');return}
+ var arena=el('start-game');
+ if(!arena){t('cm-draw-state','Não foi possível localizar a partida.');return}
+ // Transmitir a escolha imutável ao módulo do jogo, evitando outro VS e outro seletor.
+ window.classmanaDrawHandoff={
+  playerId:home,rivalId:picked.id,gender:gender(home),rivalGender:gender(picked.id),
+  level:'iniciante',mode:'challenge_team'
+ };
+ var overlay=el('cm-draw-transition');
+ overlay.querySelector('p').textContent='⚔ PREPARANDO A PARTIDA... ⚔';
+ overlay.classList.add('active');
+ var completed=false;
+ function cleanup(){
+  window.removeEventListener('classmana:duel-launch-failed',failed);
+  window.removeEventListener('classmana:duel-launching',launching);
+  clearTimeout(safetyTimer);
+ }
+ function launching(){completed=true;releaseDraw();cleanup();}
+ function failed(){
+  if(completed)return;
+  cleanup();overlay.classList.remove('active');
+  window.classmanaDrawHandoff=null;
+  t('cm-draw-state','Não foi possível iniciar a partida. Verifique a conexão e tente continuar novamente.');
+ }
+ window.addEventListener('classmana:duel-launch-failed',failed,{once:true});
+ window.addEventListener('classmana:duel-launching',launching,{once:true});
+ // Uma falha de conexão nunca deixa uma tela intransponível.
+ var safetyTimer=setTimeout(function(){if(!completed)failed()},18000);
+ overlay.onclick=function(){if(!completed){failed()}};
+ requestAnimationFrame(function(){arena.click()});
+}
+
+var check=new Image();
+check.onload=function(){ready=true;window.classmanaDueloSorteioReady=true;if(new URLSearchParams(location.search).has('duelo_preview'))open()};
+check.onerror=function(){ready=false;window.classmanaDueloSorteioReady=false};
+check.src=BASE+'moldura-seletor.png';
+document.addEventListener('click',function(event){
+ var trigger=event.target.closest?.('[data-play-mode="challenge_team"]');
+ if(!trigger||!ready||!rosterId(current()))return;
+ event.preventDefault();event.stopImmediatePropagation();open();
+},true);
+window.classmanaOpenDueloSorteio=function(){return ready?open():false};
+})();

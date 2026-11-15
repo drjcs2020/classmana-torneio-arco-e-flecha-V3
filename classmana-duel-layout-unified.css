@@ -1,0 +1,397 @@
+/* ClassMana 2026-11-10 — layout unificado de TODAS as prévias e resultados.
+   Ativado após os CSS legados: não modifica pontuação, jogadores ou backend. */
+.cm-vs-overlay,
+.cm-vs-overlay[data-mode="bot"]{
+ box-sizing:border-box!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ padding:clamp(6px,1.2dvh,12px)!important;
+ overflow-y:auto!important;overflow-x:hidden!important;
+}
+.cm-vs-overlay .cm-vs-shell,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-shell{
+ box-sizing:border-box!important;
+ flex:0 1 auto!important;width:min(98vw,1080px)!important;
+ max-width:1080px!important;max-height:none!important;height:auto!important;
+ margin:auto!important;padding:0!important;gap:clamp(3px,.65dvh,7px)!important;
+ overflow:visible!important;
+}
+.cm-vs-overlay .cm-vs-fighters,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighters{
+ box-sizing:border-box!important;
+ width:min(100%,980px)!important;max-width:980px!important;
+ display:grid!important;grid-template-columns:minmax(0,1fr) clamp(68px,10vw,110px) minmax(0,1fr)!important;
+ gap:clamp(3px,.75vw,10px)!important;
+ align-items:center!important;justify-items:center!important;margin:0 auto!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house],
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house]{
+ box-sizing:border-box!important;
+ width:min(100%,340px)!important;
+ height:clamp(235px,calc(100dvh - 265px),392px)!important;
+ min-width:0!important;min-height:0!important;
+ max-width:340px!important;max-height:none!important;
+ aspect-ratio:auto!important;
+ flex:0 1 auto!important;
+ overflow:visible!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house]::after,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house]::after{
+ background-size:100% 100%!important;
+}
+.cm-vs-overlay .cm-vs-fighters>.cm-vs-mark,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighters>.cm-vs-mark{
+ width:clamp(68px,10vw,110px)!important;
+ height:clamp(75px,11vw,120px)!important;
+ max-width:100%!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-vs-fighter-info{
+ position:absolute!important;inset:0!important;top:0!important;left:0!important;
+ width:100%!important;height:100%!important;max-width:100%!important;max-height:none!important;
+ margin:0!important;padding:0!important;display:block!important;overflow:visible!important;
+ background:transparent!important;box-shadow:none!important;border:0!important;pointer-events:none!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info strong,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-vs-fighter-info strong{
+ box-sizing:border-box!important;position:absolute!important;
+ top:73.5%!important;left:10%!important;width:80%!important;height:11%!important;
+ max-width:80%!important;margin:0!important;padding:0 3px!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ overflow:hidden!important;white-space:normal!important;text-overflow:clip!important;
+ font:900 clamp(13px,1.55vw,19px)/1.08 'Cinzel',Georgia,serif!important;
+ text-align:center!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info small,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-vs-fighter-info small{
+ box-sizing:border-box!important;position:absolute!important;
+ top:85%!important;left:9%!important;width:82%!important;height:10%!important;
+ max-width:82%!important;margin:0!important;padding:0 2px!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ overflow:visible!important;white-space:pre-line!important;text-overflow:clip!important;
+ overflow-wrap:normal!important;word-break:normal!important;
+ font:900 clamp(10px,1.06vw,14px)/1.07 'Nunito',Arial,sans-serif!important;
+ letter-spacing:0!important;text-align:center!important;
+}
+.cm-vs-overlay .cm-vs-actions,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-actions{
+ display:flex!important;flex:0 0 auto!important;align-items:center!important;justify-content:center!important;
+ flex-wrap:nowrap!important;gap:clamp(5px,1vw,12px)!important;
+ margin:0!important;padding:0!important;max-width:100%!important;
+}
+.cm-vs-overlay .cm-vs-actions button,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-actions button{
+ box-sizing:border-box!important;
+ height:clamp(40px,6.5dvh,48px)!important;min-height:40px!important;
+ padding:5px clamp(10px,1.4vw,19px)!important;
+ font:900 clamp(12px,1.3vw,17px)/1.04 'Cinzel',Georgia,serif!important;
+ white-space:nowrap!important;
+}
+.cm-vs-overlay .cm-vs-note,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-note{
+ margin:0!important;font-size:clamp(10px,.8vw,12px)!important;
+}
+.cm-vs-overlay[data-mode="bot"] .cm-vs-note{display:none!important}
+@media(max-width:680px){
+ .cm-vs-overlay .cm-vs-shell,.cm-vs-overlay[data-mode="bot"] .cm-vs-shell{width:100%!important;gap:4px!important}
+ .cm-vs-overlay .cm-vs-fighters,.cm-vs-overlay[data-mode="bot"] .cm-vs-fighters{
+  grid-template-columns:minmax(0,1fr) clamp(32px,8vw,48px) minmax(0,1fr)!important;
+  gap:3px!important;
+ }
+ .cm-vs-overlay .cm-vs-fighter[data-house],.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house]{
+  width:min(100%,46vw)!important;height:clamp(190px,38dvh,300px)!important;
+  max-width:100%!important;min-height:0!important;
+ }
+ .cm-vs-overlay .cm-vs-fighters>.cm-vs-mark,.cm-vs-overlay[data-mode="bot"] .cm-vs-fighters>.cm-vs-mark{
+  width:clamp(32px,8vw,48px)!important;height:clamp(40px,10vw,58px)!important;
+ }
+ .cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info strong,
+ .cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-vs-fighter-info strong{font-size:clamp(10px,2.7vw,14px)!important}
+ .cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info small,
+ .cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-vs-fighter-info small{font-size:clamp(8px,2vw,11px)!important}
+ .cm-vs-overlay .cm-vs-actions button,.cm-vs-overlay[data-mode="bot"] .cm-vs-actions button{
+  min-height:38px!important;height:42px!important;padding:4px 6px!important;
+  font-size:clamp(10px,2.3vw,13px)!important;
+ }
+}
+/* Telas de resultado dos modos treino, robô e duelos online. */
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player{
+ width:min(100%,calc(100dvh * .38),305px)!important;
+ max-height:100%!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player .cm-v21-name{
+ top:78.2%!important;left:9%!important;width:82%!important;
+ height:9%!important;max-width:82%!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ white-space:normal!important;overflow:hidden!important;text-overflow:clip!important;
+ font-size:clamp(13px,1.5vw,19px)!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player .cm-v21-house{
+ top:87.2%!important;left:8%!important;width:84%!important;
+ height:9%!important;max-width:84%!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ white-space:normal!important;overflow:visible!important;text-overflow:clip!important;
+ font-size:clamp(10px,1vw,13px)!important;line-height:1.05!important;
+}
+body[data-page="arena"] #view-arena #finish.cm-v21-result .finish-actions{flex:0 0 auto!important;min-height:44px!important}
+@media(max-width:760px){
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player{width:min(43vw,calc(46dvh * .714),235px)!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player .cm-v21-name{font-size:clamp(10px,2.1vw,14px)!important}
+ body[data-page="arena"] #view-arena #finish.cm-v21-result .cm-v21-player .cm-v21-house{font-size:clamp(8px,1.6vw,10px)!important}
+}
+
+
+/* Ajuste fino das prévias VS: dimensões VISUAIS, sem mudar o fluxo dos botões.
+   Transformações não aumentam a altura ocupada no layout. */
+@media (min-width:681px){
+ .cm-vs-overlay .cm-vs-fighter[data-house]{
+  transform:translateY(-12px) scale(1.075,1.075)!important;
+  transform-origin:center center!important;
+  animation:none!important;
+ }
+ .cm-vs-overlay .cm-vs-fighters>.cm-vs-mark{
+  transform:scale(1.30)!important;
+  transform-origin:center!important;
+  animation:none!important;
+ }
+}
+.cm-vs-overlay[data-mode="bot"] .cm-combat-heading .cm-vs-title{
+ transform:translateY(-15px) scale(.94)!important;
+ transform-origin:center!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-combat-portrait img{
+ transform:scale(1.45)!important;
+ transform-origin:50% 23%!important;
+}
+.cm-vs-overlay .cm-vs-fighter.cm-vs-facing-left .cm-combat-portrait img{
+ transform:scaleX(-1) scale(1.45)!important;
+ transform-origin:50% 23%!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info strong{
+ top:71%!important;height:11%!important;
+ font-size:clamp(13px,1.55vw,19px)!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info small{
+ top:82.1%!important;height:12%!important;
+ flex-direction:column!important;gap:0!important;
+ white-space:normal!important;overflow:hidden!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-grade{
+ display:block!important;flex:none!important;
+ font:900 clamp(9px,.87vw,11px)/1.07 'Nunito',Arial,sans-serif!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-house-name{
+ display:block!important;flex:none!important;
+ font:900 clamp(11px,1.05vw,14px)/1.07 'Nunito',Arial,sans-serif!important;
+ white-space:normal!important;text-align:center!important;
+}
+@media(max-width:680px){
+ .cm-vs-overlay .cm-vs-fighter[data-house] .cm-combat-portrait img{
+  transform:scale(1.45)!important;
+ }
+ .cm-vs-overlay .cm-vs-fighter.cm-vs-facing-left .cm-combat-portrait img{
+  transform:scaleX(-1) scale(1.45)!important;
+ }
+ .cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-grade{font-size:clamp(8px,1.8vw,10px)!important}
+ .cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-house-name{font-size:clamp(9px,2vw,11px)!important}
+}
+
+
+/* Padrao visual da tela de resultado aplicado às telas de ABERTURA.
+   Mantém VS e botões próprios da abertura; não introduz placar nem vencedor. */
+@media (min-width:761px){
+ .cm-vs-overlay .cm-vs-shell,
+ .cm-vs-overlay[data-mode="bot"] .cm-vs-shell{
+   width:min(98vw,1040px)!important;
+   gap:clamp(3px,.55dvh,6px)!important;
+ }
+ .cm-vs-overlay .cm-vs-fighters,
+ .cm-vs-overlay[data-mode="bot"] .cm-vs-fighters{
+   width:min(100%,970px)!important;
+   grid-template-columns:minmax(0,1fr) clamp(105px,12vw,145px) minmax(0,1fr)!important;
+ }
+ .cm-vs-overlay .cm-vs-fighter[data-house],
+ .cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house]{
+   width:min(31vw,calc((100dvh - 190px)*.75),330px)!important;
+   height:auto!important;
+   aspect-ratio:2/3!important;
+   max-width:330px!important;
+   min-width:0!important;min-height:0!important;
+   transform:none!important;animation:none!important;
+ }
+ .cm-vs-overlay .cm-vs-fighters>.cm-vs-mark,
+ .cm-vs-overlay[data-mode="bot"] .cm-vs-fighters>.cm-vs-mark{
+   width:clamp(100px,11vw,135px)!important;
+   height:clamp(110px,12vw,145px)!important;
+   transform:none!important;
+ }
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-combat-portrait,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-combat-portrait{
+ top:18.5%!important;left:17%!important;
+ width:66%!important;height:49%!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-combat-portrait img,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-combat-portrait img{
+ transform:scale(1.12)!important;
+ transform-origin:50% 27%!important;
+}
+.cm-vs-overlay .cm-vs-fighter.cm-vs-facing-left .cm-combat-portrait img,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter.cm-vs-facing-left .cm-combat-portrait img{
+ transform:scaleX(-1) scale(1.12)!important;
+ transform-origin:50% 27%!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info strong,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-vs-fighter-info strong{
+ top:75.4%!important;left:9.5%!important;
+ width:81%!important;max-width:81%!important;height:7%!important;
+ padding:0 2px!important;white-space:nowrap!important;
+ font:900 clamp(13px,1.48vw,21px)/1.08 'Cinzel',Georgia,serif!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info small,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-vs-fighter-info small{
+ top:87.3%!important;left:8%!important;
+ width:84%!important;max-width:84%!important;height:6%!important;
+ display:flex!important;flex-direction:row!important;
+ align-items:center!important;justify-content:center!important;
+ white-space:nowrap!important;overflow:visible!important;
+ font:900 clamp(9px,.91vw,12px)/1.08 'Nunito',Arial,sans-serif!important;
+ letter-spacing:0!important;
+}
+@media(max-width:760px){
+ .cm-vs-overlay .cm-vs-fighter[data-house],
+ .cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house]{
+   width:min(40vw,calc((100dvh - 195px)*.70),230px)!important;
+   height:auto!important;aspect-ratio:2/3!important;
+   transform:none!important;animation:none!important;
+ }
+ .cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info small,
+ .cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-vs-fighter-info small{
+   font-size:clamp(7px,1.5vw,10px)!important;
+ }
+}
+
+
+/* 2026-11-10: correção final de proporção das PRÉVIAS (todas as modalidades).
+   Aumenta LARGURA, limita ALTURA e preserva espaço dos botões. */
+.cm-vs-overlay,
+.cm-vs-overlay[data-mode="bot"]{
+ align-items:center!important;
+ padding:8px 8px!important;
+ overflow-x:hidden!important;
+ overflow-y:auto!important;
+}
+.cm-vs-overlay .cm-vs-shell,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-shell{
+ flex:0 0 auto!important;
+ width:min(98vw,1060px)!important;
+ height:auto!important;max-height:none!important;
+ gap:clamp(3px,.55dvh,6px)!important;
+ margin:auto!important;
+}
+.cm-vs-overlay .cm-vs-fighters,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighters{
+ width:min(100%,1040px)!important;
+ grid-template-columns:minmax(0,1fr) clamp(85px,11vw,130px) minmax(0,1fr)!important;
+ gap:clamp(4px,.8vw,10px)!important;
+ align-items:center!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house],
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house]{
+ box-sizing:border-box!important;
+ width:min(100%,340px)!important;
+ height:min(55dvh,365px)!important;
+ min-height:0!important;min-width:0!important;
+ max-width:340px!important;max-height:365px!important;
+ aspect-ratio:auto!important;
+ transform:none!important;animation:none!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-combat-portrait,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-combat-portrait{
+ top:12.5%!important;left:14%!important;
+ width:72%!important;height:58%!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-combat-portrait img,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-combat-portrait img{
+ transform:scale(1.72)!important;transform-origin:50% 23%!important;
+}
+.cm-vs-overlay .cm-vs-fighter.cm-vs-facing-left .cm-combat-portrait img,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter.cm-vs-facing-left .cm-combat-portrait img{
+ transform:scaleX(-1) scale(1.72)!important;transform-origin:50% 23%!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info strong,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-vs-fighter-info strong{
+ top:74%!important;height:8%!important;
+ left:10%!important;width:80%!important;max-width:80%!important;
+ font-size:clamp(15px,1.7vw,22px)!important;
+ white-space:nowrap!important;
+}
+.cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info small,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-vs-fighter-info small{
+ top:calc(80% + 8px)!important;height:10%!important;
+ left:5%!important;width:90%!important;max-width:90%!important;
+ white-space:nowrap!important;overflow:hidden!important;text-overflow:clip!important;
+ font-size:clamp(10px,.98vw,12px)!important;
+}
+.cm-vs-overlay .cm-vs-fighters>.cm-vs-mark,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighters>.cm-vs-mark{
+ width:clamp(85px,11vw,130px)!important;
+ height:clamp(90px,12vw,140px)!important;
+ transform:none!important;animation:none!important;
+}
+.cm-vs-overlay .cm-vs-actions,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-actions{
+ flex:0 0 auto!important;position:relative!important;
+ margin:0!important;padding:0!important;
+}
+.cm-vs-overlay .cm-vs-actions button,
+.cm-vs-overlay[data-mode="bot"] .cm-vs-actions button{
+ height:clamp(40px,6.5dvh,48px)!important;
+ min-height:40px!important;
+}
+@media(max-width:680px){
+ .cm-vs-overlay .cm-vs-fighters,
+ .cm-vs-overlay[data-mode="bot"] .cm-vs-fighters{
+  grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr)!important;
+  gap:2px!important;
+ }
+ .cm-vs-overlay .cm-vs-fighter[data-house],
+ .cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house]{
+  width:min(100%,44vw)!important;
+  height:min(40dvh,290px)!important;
+ }
+ .cm-vs-overlay .cm-vs-fighters>.cm-vs-mark,
+ .cm-vs-overlay[data-mode="bot"] .cm-vs-fighters>.cm-vs-mark{
+  width:36px!important;height:48px!important;
+ }
+ .cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info strong,
+ .cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-vs-fighter-info strong{
+  font-size:clamp(11px,2.65vw,15px)!important;
+ }
+ .cm-vs-overlay .cm-vs-fighter[data-house] .cm-vs-fighter-info small,
+ .cm-vs-overlay[data-mode="bot"] .cm-vs-fighter[data-house] .cm-vs-fighter-info small{
+  font-size:clamp(7px,1.65vw,10px)!important;
+ }
+}
+
+
+/* V18 — Moldura metálica exclusiva do robô (nunca aplicada aos alunos de 4º C).
+   A imagem do robô e as informações continuam elementos HTML independentes. */
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter.cm-vs-robot[data-house="ROBOT"]::after{
+ content:""!important;display:block!important;
+ background-image:url("assets/v2/frames/robo-prata.webp")!important;
+ background-repeat:no-repeat!important;
+ background-position:center!important;
+ background-size:100% 100%!important;
+ opacity:1!important;
+}
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter.cm-vs-robot[data-house="ROBOT"] .cm-combat-portrait{
+ background:radial-gradient(ellipse at 52% 42%,#186ba38c,#05172f8f 65%,#061224d1)!important;
+}
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter.cm-vs-robot[data-house="ROBOT"] .cm-vs-fighter-info strong{
+ color:#f1faff!important;text-shadow:0 2px 4px #000d,0 0 7px #5bcdf155!important;
+}
+.cm-vs-overlay[data-mode="bot"] .cm-vs-fighter.cm-vs-robot[data-house="ROBOT"] .cm-vs-fighter-info small{
+ color:#bbecff!important;text-shadow:0 2px 4px #00182d!important;
+}
+/* O enquadramento do retrato do robô é o mesmo dos demais adversários;
+   somente sua imagem é refletida horizontalmente, não a moldura ou textos. */

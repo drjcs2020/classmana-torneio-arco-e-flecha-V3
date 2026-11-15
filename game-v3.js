@@ -1,0 +1,1738 @@
+import {initScene} from './scene-v3.js?v=20261114-3d-replay-v2';
+import {GEAR,GEAR_BY_ID,getGearLevel,isGearUnlocked} from './equipment-catalog.js?v=win-progress-linear-20261110';
+import {mountEquipmentInventory} from './equipment-inventory.js?v=arsenal-button-colors-20261111';
+import {CIRCUITS,LEVELS,targetMotion,mediumTwinTargets,obstacleBlocks,distanceDifficulty,flightSeconds} from './arena-difficulty.js?v=20261113-hard-slower-v6';
+import {arenaAudio} from './arena-audio.js?v=20261114-aplausos-final-v2';
+import {cinematics} from './classmana-cinematics.js?v=20261113-robo-resultado-v4';
+import {initAtmosphere} from './arena-atmosphere.js?v=20261113-shield-proportional-v6';
+import {online} from './online-client.js?v=api12';
+import {mountSpriteHUD} from './sprite-hud.js?v=1';
+const $=id=>document.getElementById(id);
+function cmResetResultPresentation(){
+ const finish=$('finish');if(!finish)return;
+ finish.classList.add('hidden');
+ finish.classList.remove('cm-v21-result');
+ finish.querySelector('.cm-v21-stage')?.remove();
+ const heading=finish.querySelector('.cm-v21-head');
+ const title=heading?.querySelector('#finish-title');
+ if(title)heading.before(title);
+ heading?.remove();
+}
+
+const H={A:{grade:'4º A',name:'Águia Dourada',color:'#78bdff'},B:{grade:'4º B',name:'Leão de Fogo',color:'#ff9778'},C:{grade:'4º C',name:'Dragão de Esmeralda',color:'#8defac'}};
+const R=window.CLASSMANA_ROSTER||{A:[],B:[],C:[]};
+const clamp=(v,min,max)=>Math.min(max,Math.max(min,v));
+let house='A',view='inicio',scene=null,atmosphere=null,match=null,reticle={x:.50,y:.45},pointerStart=0,holding=false,storage=[],spriteHud=null;
+function chargePower(){const t=((Date.now()-pointerStart)/900)%2;return clamp(.28+.72*(t<=1?t:2-t),.28,1)}
+const EQUIPMENT={
+ bows:Object.fromEntries(GEAR.map(item=>[item.id,item.name])),
+ arrows:{rubi:'Flecha oficial',esmeralda:'Flecha oficial',solar:'Flecha oficial'}
+};
+const BOW_RULES=Object.fromEntries(GEAR.map(item=>[item.id,{
+ wind:item.wind,ring:item.ring,bonus:item.bonus,description:item.desc
+}]));
+const GEAR_STORAGE_PREFIX='classmana-archery-equipment-v2:';
+function readEquipment(playerId=''){
+ if(!/^[ABC]\d{2}$/.test(playerId))return {bow:'classico',arrow:'rubi'};
+ try{const x=JSON.parse(localStorage.getItem(GEAR_STORAGE_PREFIX+playerId)||'{}');
+  return {bow:EQUIPMENT.bows[x.bow]?x.bow:'classico',arrow:'rubi'};}
+ catch{return {bow:'classico',arrow:'rubi'}}
+}
+let equipment=readEquipment(),gearProgress={wins:0,confirmed:false,playerId:''};
+const gearCarousel=mountEquipmentInventory({selected:equipment.bow,onSelect:id=>chooseEquipment('bow',id)});
+function applyEquipment(){
+  gearCarousel?.select(equipment.bow);gearCarousel?.setProgress(gearProgress);
+  const status=$('equipment-summary'),item=GEAR_BY_ID[equipment.bow]||GEAR_BY_ID.classico;
+  if(status)status.textContent='✓ '+item.name+' · Nv. '+item.level+' — '+item.ability;
+  scene?.setEquipment?.(equipment);
+}
+function saveEquipment(playerId=identifiedPlayerId){
+ if(!/^[ABC]\d{2}$/.test(playerId||''))return;
+ try{localStorage.setItem(GEAR_STORAGE_PREFIX+playerId,JSON.stringify(equipment))}catch{}
+}
+function loadPlayerEquipment(playerId){
+ if(!/^[ABC]\d{2}$/.test(playerId||''))return;
+ gearProgress={wins:0,confirmed:false,playerId};
+ // Enquanto o placar não confirmar as vitórias, só o arco inicial fica ativo.
+ equipment={bow:'classico',arrow:'rubi'};applyEquipment();
+ void syncEquipmentProgress(playerId);
+}
+async function syncEquipmentProgress(playerId){
+ if(!/^[ABC]\d{2}$/.test(playerId||''))return;
+ const requested=playerId;
+ try{
+  const ranking=await online.ranking();
+  if((identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent())!==requested)return;
+  const row=(ranking.players||[]).find(p=>p.id===requested);
+  const wins=Math.max(0,Number(row?.wins)||0);
+  gearProgress={wins,confirmed:true,playerId:requested};
+  if(document.body.dataset.page==='lobby'){
+   const preferred=readEquipment(requested).bow;
+   equipment={bow:isGearUnlocked(preferred,wins)?preferred:'classico',arrow:'rubi'};
+   if(preferred!==equipment.bow)saveEquipment(requested);
+   applyEquipment();
+  }
+  window.classmanaGearProgress={playerId:requested,wins,level:getGearLevel(wins),confirmed:true};
+  window.dispatchEvent(new Event('classmana:v2-lobby-session-changed'));
+ }catch(error){
+  if((identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent())!==requested)return;
+  gearProgress={wins:0,confirmed:false,playerId:requested};
+  if(document.body.dataset.page==='lobby'){equipment={bow:'classico',arrow:'rubi'};applyEquipment();}
+  console.warn('[ClassMana] Vitórias ainda não verificadas:',error);
+ }
+ gearCarousel?.setProgress(gearProgress);
+}
+function chooseEquipment(key,value){
+ if(match?.running&&view==='arena'){toast('Personalize o equipamento antes de iniciar a próxima rodada.');return}
+ if(key!=='bow'||!EQUIPMENT.bows[value])return;
+ if(value!=='classico'&&(!gearProgress.confirmed||gearProgress.playerId!==identifiedPlayerId||!isGearUnlocked(value,gearProgress.wins))){
+  toast('🔒 Equipamento bloqueado. Vença duelos oficiais para desbloquear.');return;
+ }
+ equipment={bow:value,arrow:'rubi'};saveEquipment();applyEquipment();
+}
+let incoming=null,scoreTab='players',onlineInbox=[],onlineLoading=false,startMatchPending=false;
+let identifiedPlayerId='';
+const CM_ACTIVE_STUDENT='cm_active_student_v2';
+const CM_INTERNAL_RETURN='cm_internal_duel_return_v2';
+const CM_LOBBY_STUDENT='cm_v2_lobby_student';
+function cmStoredLobbyStudent(){try{const id=localStorage.getItem(CM_LOBBY_STUDENT)||'';return /^[ABC]\d{2}$/.test(id)?id:''}catch{return ''}}
+function cmSignalLobbyStudent(){window.dispatchEvent(new Event('classmana:v2-lobby-session-changed'))}
+function cmRememberLobbyStudent(id){
+ if(!/^[ABC]\d{2}$/.test(id||''))return;
+ try{localStorage.setItem(CM_LOBBY_STUDENT,id)}catch{}
+ cmSignalLobbyStudent();
+}
+function cmClearLobbyStudent(){try{localStorage.removeItem(CM_LOBBY_STUDENT)}catch{}cmSignalLobbyStudent()}
+
+function cmMarkInternalReturn(){try{sessionStorage.setItem(CM_INTERNAL_RETURN,'1')}catch{}}
+function cmCanContinue(){
+ try{
+  const nav=performance.getEntriesByType('navigation')[0];
+  const internal=sessionStorage.getItem(CM_INTERNAL_RETURN)==='1';
+  sessionStorage.removeItem(CM_INTERNAL_RETURN);
+  return internal&&nav?.type!=='reload';
+ }catch{return false}
+}
+function cmSessionId(){try{return sessionStorage.getItem(CM_ACTIVE_STUDENT)||''}catch{return ''}}
+function cmSaveStudent(id){try{sessionStorage.setItem(CM_ACTIVE_STUDENT,id)}catch{}cmRememberLobbyStudent(id)}
+function cmForgetStudent(){try{sessionStorage.removeItem(CM_ACTIVE_STUDENT);sessionStorage.removeItem('cm_active_archery_match_v2')}catch{}}
+const TEAMS=window.CLASSMANA_TEAMS||{};
+const cmNavigationType=performance.getEntriesByType('navigation')[0]?.type;
+const cmIsLobby=document.body.dataset.page==='lobby';
+// O aluno mantém o perfil até usar ENCERRAR SESSÃO.
+const cmInternalReturn=cmIsLobby&&cmCanContinue();
+if(cmIsLobby&&!cmStoredLobbyStudent()){
+ try{const oldId=cmSessionId()||localStorage.getItem('cm_arco_nome_v2');if(/^[ABC]\d{2}$/.test(oldId||''))cmRememberLobbyStudent(oldId)}catch{}
+}
+const cmResumeSameStudent=cmIsLobby&&(cmInternalReturn||Boolean(cmStoredLobbyStudent()));
+if(cmIsLobby&&cmStoredLobbyStudent()&&cmSessionId()!==cmStoredLobbyStudent()){
+ try{sessionStorage.setItem(CM_ACTIVE_STUDENT,cmStoredLobbyStudent())}catch{}
+}
+if(cmIsLobby&&!cmResumeSameStudent){online.logout();cmForgetStudent();}
+if(document.body.dataset.page==='arena'&&cmNavigationType==='reload'){
+ online.logout();cmForgetStudent();location.replace('./');
+}
+
+const rand=(a,b)=>a+Math.random()*(b-a);
+function safeRead(){try{const a=JSON.parse(localStorage.getItem('classmana-archery-v2-isolated'));return Array.isArray(a)?a.filter(x=>x&&typeof x==='object').slice(-150):[]}catch{return []}}
+storage=safeRead();
+function persist(row){storage.push({...row,at:new Date().toISOString()});storage=storage.slice(-150);try{localStorage.setItem('classmana-archery-v2-isolated',JSON.stringify(storage))}catch{}renderRanking()}
+function toast(s){const t=$('toast');t.textContent=s;t.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove('show'),3100)}
+// Reentrada direta sem escolher novamente a Casa ou confirmar o aluno.
+function cmOpenActiveLobbyStep(step){
+ if(!cmIsLobby||!['heroi','desafio'].includes(step))return false;
+ const id=[cmStoredLobbyStudent(),cmSessionId(),identifiedPlayerId,online.user?.id]
+  .find(value=>/^[ABC][0-9]{2}$/.test(value||'')&&choices(value[0]).some(p=>p.id===value));
+ if(!id||(identifiedPlayerId&&identifiedPlayerId!==id)||(online.user&&online.user.id!==id))return false;
+ identifiedPlayerId=id;
+ if(cmSessionId()!==id||cmStoredLobbyStudent()!==id)cmSaveStudent(id);
+ if(gearProgress.playerId!==id)loadPlayerEquipment(id);else void syncEquipmentProgress(id);
+ selectHouse(id[0]);
+ fillPlayer(id);
+ $('player').value=id;$('player').disabled=true;
+ populateIdentityOptions();
+ setLobbyStep(step);
+ return true;
+}
+window.classmanaOpenActiveLobbyStep=cmOpenActiveLobbyStep;
+// Rota compartilhada para sair da arena e jogar novamente sem perder a sessão.
+function cmReturnToChallenge(){
+ const playerId=[identifiedPlayerId,match?.playerId,online.user?.id,cmSessionId()]
+  .find(id=>/^[ABC][0-9]{2}$/.test(id||''));
+ if(playerId&&cmSessionId()!==playerId)cmSaveStudent(playerId);
+ if(match){match.running=false;match.locked=false;match.paused=false}
+ holding=false;
+ try{sessionStorage.removeItem('cm_active_archery_match_v2')}catch{}
+ if(document.body.dataset.page==='arena'){
+  if(playerId)cmMarkInternalReturn();
+  window.location.assign(playerId?'./?continuar=1':'./');
+  return;
+ }
+ if(playerId){
+  selectHouse(playerId[0]);fillPlayer(playerId);
+  $('player').value=playerId;$('player').disabled=true;
+  setLobbyStep('desafio');
+  document.body.classList.remove('cm-v2-home-mode');
+  document.body.classList.add('cm-v2-onboarding');
+ }else{
+  setLobbyStep('reino');
+ }
+}
+
+// Reinicia imediatamente a MESMA configuração de treino, sem retornar ao lobby.
+// Desafios online não podem ser reexecutados como se o adversário já tivesse jogado.
+function cmReplayCurrentMatch(){
+ const previous=match;
+ if(!previous||!['bot','practice'].includes(previous.mode)){cmReturnToChallenge();return;}
+ if(startMatchPending||document.body.dataset.page!=='arena')return;
+ const course=CIRCUITS[previous.level]||CIRCUITS.iniciante;
+ holding=false;
+ match={...previous,scores:[],running:true,locked:false,paused:false,
+  pauseSince:null,freezeTime:null,stageStartedAt:performance.now(),
+  wind:0,shift:0,distance:course[0],online:null,onlineShots:[],
+  onlineReplay:[],onlineReplayPoints:0,onlineSaveFailed:false,
+  botShots:[],botTotal:null,seed:Math.floor(rand(100000,999999))};
+ reticle={x:.50,y:.45};
+ cmResetResultPresentation();
+ $('finish').removeAttribute('data-cm-result-outcome');
+ $('finish').removeAttribute('data-cm-result-mode');
+ $('stage').classList.remove('aiming','firing');
+ $('hit').classList.remove('show');$('hit').textContent='';
+ hideDuelTurn();
+ scene?.setPower(0);
+ spriteHud?.setPower?.(0);
+ spriteHud?.setPaused?.(false);
+ arenaAudio.setActive(true);
+ $('instruction').textContent='MOVA O ARCO PARA MIRAR · SEGURE PARA PUXAR · SOLTE PARA DISPARAR';
+ ensureScene();changeTarget();updateReticle();uiHud();
+ try{sessionStorage.setItem('cm_active_archery_match_v2',JSON.stringify(match))}catch{}
+}
+window.classmanaReturnToChallenge=cmReturnToChallenge;
+function openView(name){
+ if(name==='inicio'&&document.body.dataset.page==='arena'){
+  cmReturnToChallenge();return;
+ }
+ // Two separate HTML pages: lobby and arena. Ranking and rules are overlays.
+ if(name!=='arena'&&view==='arena'&&match?.running){
+  match.running=false;match.locked=false;holding=false;
+  $('stage').classList.remove('aiming','firing');scene?.setPower(0);
+ }
+ arenaAudio.setActive(name==='arena');atmosphere?.setActive(name==='arena');
+ view=name;
+ document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));
+ document.querySelectorAll('.nav-link').forEach(x=>x.classList.toggle('active',x.dataset.view===name));
+ if(name==='ranking')renderRanking();
+}
+function setLobbyStep(step){
+ if(!['perfil','reino','heroi','desafio','partida'].includes(step))return;
+ const el=$('view-inicio');if(!el)return;
+ el.dataset.step=step;
+ cmShowActiveSession();
+ document.querySelectorAll('[data-lobby-step]').forEach(button=>{
+  const active=button.dataset.lobbyStep===step;
+  button.classList.toggle('chosen',active);button.setAttribute('aria-selected',String(active));
+ });
+}
+function cmShowActiveSession(){
+ const panel=$('cm-previous-session');
+ const id=identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent(),player=id&&choices(id[0]).find(p=>p.id===id);
+ const valid=Boolean(player);
+ if(panel)panel.hidden=!valid;
+ const label=$('cm-previous-session-name');
+ if(label)label.textContent=valid?'Sessão atual: '+player.name+' · 4º '+id[0]:'';
+ // Placa dourada da sessão, reutilizando a arte ilustrada original.
+ // Duelo ilustrado conserva a placa própria e evita duplicação.
+ const badge=$('cm-global-player-plate'),step=$('view-inicio')?.dataset.step;
+ const illustrated=step==='partida'&&['challenge_same','challenge'].includes($('mode')?.value);
+ const show=valid&&['heroi','desafio','partida'].includes(step)&&!illustrated;
+ if(badge){
+  badge.hidden=!show;
+  if(show){
+   const name=$('cm-global-player-name'),details=$('cm-global-player-details');
+   if(name)name.textContent=player.name;
+   if(details)details.textContent=H[id[0]].grade+' · '+(TEAMS[id]||H[id[0]].name);
+  }
+ }
+}
+function drawCourse(){
+ const el=$('lobby-course');if(!el)return;
+ const mode=$('mode')?.value||'practice';
+ const level=mode==='challenge_team'?'iniciante':mode==='challenge_same'?'avancado':mode==='challenge'?'lendario':$('challenge-level')?.value||'iniciante';
+ const path=CIRCUITS[level]||CIRCUITS.iniciante;
+ el.innerHTML='<svg class="course-route" viewBox="0 0 900 90" preserveAspectRatio="none" aria-hidden="true"><path d="M36 67 C 140 67 148 18 260 30 S 445 79 515 52 S 705 10 860 50" fill="none" stroke="#764f27" stroke-width="15" stroke-linecap="round"/><path d="M36 67 C 140 67 148 18 260 30 S 445 79 515 52 S 705 10 860 50" fill="none" stroke="#fbe8b0" stroke-width="10" stroke-linecap="round"/></svg>'+
+  path.map((d,i)=>'<span class="course-node '+(i===0?'chosen':'')+'">'+(i===4?'🏆':'🎯')+' <b>'+d+'m</b></span>').join('');
+ el.setAttribute('aria-label',LEVELS[level].title+': '+path.join(', ')+' metros');
+}
+
+function choices(h){return (R[h]||[]).flatMap((name,i)=>typeof name==='string'&&name.trim()?[{id:h+String(i+1).padStart(2,'0'),name}]:[]);}
+function fillPlayer(wanted){
+ const sel=$('player'),quick=$('cm-quick-player');
+ const valid=choices(house),previous=sel.value;
+ const selected=[identifiedPlayerId,wanted,previous,online.user?.id].find(id=>valid.some(p=>p.id===id))||'guest';
+ sel.innerHTML='<option value="guest">Selecione seu nome</option>'+valid.map(p=>`<option value="${p.id}">${p.name} · ${p.id}</option>`).join('');
+ sel.value=selected;
+ if(quick){
+  quick.innerHTML='<option value="">Selecione seu nome para disputar</option>'+valid.map(p=>`<option value="${p.id}">${p.name} · ${p.id}</option>`).join('');
+  quick.value=selected==='guest'?'':selected;
+ }
+ fillRivals();
+ if($('mode').value==='challenge_same')syncSameHouseDuel();
+}
+function fillRivals(){
+ const mode=$('mode').value,same=mode==='challenge_same',teams=mode==='challenge_team',myId=$('player').value;
+ const myTeam=TEAMS[myId]||'',all=Object.keys(H),scope=$('team-scope').value;
+ const rivals=all.filter(h=>h!==house),houses=mode==='challenge'?rivals:teams&&scope==='other'?rivals:[house];
+ const houseSelect=$('opponent-house'),priorHouse=houseSelect.value;
+ houseSelect.innerHTML=houses.map(h=>`<option value="${h}">${H[h].grade} · ${H[h].name}</option>`).join('');
+ if(houses.includes(priorHouse))houseSelect.value=priorHouse;
+ if(mode==='challenge'){
+   // Não escolher uma Casa adversária automaticamente: o aluno escolhe um dos dois brasões.
+   houseSelect.value=rivals.includes(selectedOtherHouse)?selectedOtherHouse:'';
+   if(!rivals.includes(selectedOtherHouse))houseSelect.selectedIndex=-1;
+ }
+ const enemyHouse=mode==='challenge'?(rivals.includes(selectedOtherHouse)?selectedOtherHouse:''):houseSelect.value||house;
+ const ownTeamField=$('my-team'),ownTeams=[...new Set(choices(house).map(p=>TEAMS[p.id]))].filter(Boolean).sort();
+ ownTeamField.innerHTML=ownTeams.map(t=>`<option value="${t}">${t}</option>`).join('');
+ if(myTeam)ownTeamField.value=myTeam;
+ const opposingTeamField=$('opponent-team'),priorTeam=opposingTeamField.value;
+ const availableTeams=[...new Set(choices(enemyHouse).map(p=>TEAMS[p.id]))].filter(t=>t&&(enemyHouse!==house||t!==myTeam)).sort();
+ opposingTeamField.innerHTML=availableTeams.map(t=>`<option value="${t}">${t}</option>`).join('');
+ if(availableTeams.includes(priorTeam))opposingTeamField.value=priorTeam;
+ const old=$('rival').value;
+ let pool=mode==='challenge'&&!enemyHouse?[]:same?choices(house):teams&&scope!=='other'?choices(enemyHouse).filter(p=>TEAMS[p.id]===opposingTeamField.value):choices(enemyHouse);
+ pool=pool.filter(p=>p.id!==myId);
+ $('rival').innerHTML=((same||mode==='challenge')?'<option value="">Selecione um adversário</option>':'')+
+  pool.map(p=>`<option value="${p.id}">${p.name} · ${H[p.id[0]].grade}</option>`).join('');
+ if(pool.some(p=>p.id===old))$('rival').value=old;
+ const lbl=$('rival-label');
+ lbl.firstChild.textContent=teams&&scope==='other'?'4 · Aluno sorteado da casa rival':teams?'4 · Representante da equipe adversária':same?'Colega da sua turma':'4 · Adversário de outra turma';
+ lbl.querySelector('small').textContent='Selecione o nome do colega; não há senha de desafio.';
+}
+
+const ARCHER_SKINS={
+ A:{m:"aguia-m.webp",f:"aguia-f.webp",desc:"Armadura azul e dourada, precisão do vento.",mascot:"Águia Dourada"},
+ B:{m:"leao-m.webp",f:"leao-f.webp",desc:"Armadura vermelha e dourada, coragem do fogo.",mascot:"Leão de Fogo"},
+ C:{m:"dragao-m.webp",f:"dragao-f.webp",desc:"Armadura verde-esmeralda e arco dracônico.",mascot:"Dragão de Esmeralda"}
+};
+let selectedSkins={};
+try{selectedSkins=JSON.parse(localStorage.getItem("classmana-archer-skins-v2")||"{}")||{}}catch{}
+function archerGender(){return selectedSkins[house]==="f"?"f":"m"}
+function archerImage(){return "assets/v2/heroes/"+ARCHER_SKINS[house][archerGender()]}
+function refreshArcher(){
+ const female=archerGender()==='f',title=(female?'Arqueira':'Arqueiro')+' da '+H[house].name;
+ const titleEl=$('hero-preview-name'),desc=$('hero-preview-desc'),img=$('hero-preview-img');
+ if(titleEl)titleEl.textContent=H[house].name+' · '+H[house].grade;
+ if(desc)desc.textContent=ARCHER_SKINS[house].desc+' Mascote: '+ARCHER_SKINS[house].mascot+'.';
+ if(img){const file=archerImage();if(!img.src.endsWith(file))img.src=file;img.alt=title+' de corpo inteiro, segurando o arco';}
+ const indicator=$('archer-carousel-indicator');
+ const heroNames={A:{m:'Auron',f:'Lyra'},B:{m:'Kael',f:'Valéria'},C:{m:'Thalion',f:'Elara'}};
+  const heroName=heroNames[house][female?'f':'m'];
+  if(indicator)indicator.textContent=heroName+' · '+(female?'Arqueira':'Arqueiro');
+  const portrait=$('hero-preview-img');if(portrait)portrait.title=heroName+' da Casa '+H[house].name;
+ const frame=$('hero-preview');if(frame)frame.dataset.house=house;
+ const hud=$('hud-archer-image');if(hud){hud.src=archerImage();hud.alt=title;}
+}
+
+function chooseArcher(g){
+ if(g!=="m"&&g!=="f")return;
+ selectedSkins[house]=g;try{localStorage.setItem("classmana-archer-skins-v2",JSON.stringify(selectedSkins))}catch{}
+ refreshArcher();
+ const p=$('hero-preview');if(p){p.classList.remove('archer-switch-animation');void p.offsetWidth;p.classList.add('archer-switch-animation');}
+}
+function selectHouse(k){
+ if(!H[k])return;
+ 
+ house=k;arenaAudio.setHouse(k);atmosphere?.setHouse(k);cinematics.setAmbientHouse(k);
+ const lobby=$('view-inicio');if(lobby)lobby.dataset.house=k;
+ document.querySelectorAll('.house').forEach(el=>{
+  const active=el.dataset.house===k;
+  el.classList.toggle('selected',active);el.setAttribute('aria-pressed',String(active));
+  el.querySelector('.house-check').textContent=active?'✓ SELECIONADA':'ESCOLHER CASA';
+ });
+ const stage=$('stage');stage.classList.remove('house-a','house-b','house-c');stage.classList.add('house-'+k.toLowerCase());
+ const badge=$('stage-house-badge');if(badge){badge.dataset.house=k;badge.querySelector('img').src=window.CLASSMANA_HOUSES[k].emblem;badge.querySelector('strong').textContent=H[k].name;}
+ refreshArcher();
+ scene?.setHouse(k);
+ spriteHud?.setHouse(k,ready=>{
+  document.body.classList.toggle('cm-art-on',Boolean(ready)&&document.body.dataset.page==='arena');
+  scene?.setBackdropMode?.(ready);
+  if(match)uiHud();
+  // A arena aparece após o motor PlayCanvas 3D estar pronto.
+  if(document.body.dataset.page==='arena'&&match&&view==='arena'){
+   const stage=$('stage');
+   const reveal=()=>requestAnimationFrame(()=>requestAnimationFrame(()=>
+    document.documentElement.classList.remove('cm-v2-arena-loading')));
+   if(['playcanvas','fallback'].includes(stage?.dataset.sceneEngine))reveal();
+   else stage?.addEventListener('classmana:scene-ready',reveal,{once:true});
+  }
+ });
+ fillPlayer(incoming?.rivalId?.[0]===k?incoming.rivalId:null);
+ // A Casa escolhida define a turma. A escolha do nome vem antes do arqueiro.
+}
+function isDuel(mode){return mode==='challenge'||mode==='challenge_same'||mode==='challenge_team'}
+function goOnlinePortal(mode=$('mode').value,inbox=false){
+ window.location.assign(online.portalUrl({house,mode,player:$('player').value,inbox}));
+}
+function duelKind(mode){return mode==='challenge_same'?'mesma_turma':mode==='challenge_team'?'entre_equipes':'interclasses'}
+function duelMode(kind){return kind==='mesma_turma'?'challenge_same':kind==='entre_equipes'?'challenge_team':'challenge'}
+// O seletor do jogo permanece sendo #rival; o botão ilustrado só o apresenta.
+let samePickerReady=false;
+let wasSameHouse=false;
+let selectedOtherHouse='';
+let previousIllustratedMode='';
+function samePickerClose(){
+ const list=$('cm-same-rivals-list'),button=$('cm-same-open-rivals');
+ if(!list||!button)return;
+ list.hidden=true;button.setAttribute('aria-expanded','false');
+ $('setup')?.classList.remove('cm-same-rivals-open');
+}
+function samePickerRender(){
+ const button=$('cm-same-open-rivals'),list=$('cm-same-rivals-list'),native=$('rival'),label=$('cm-same-button-text');
+ if(!button||!list||!native||!label)return;
+ const chosen=[...native.options].find(o=>o.value&&o.value===native.value);
+ label.textContent=chosen?chosen.textContent.replace(/\s*[·•]\s*4º\s*[ABC].*$/i,''):($('mode').value==='challenge'?'Selecione um adversário':'Selecione um colega da turma...');
+ button.classList.toggle('has-selection',!!chosen);
+ list.replaceChildren();
+ for(const opt of native.options){
+  if(!opt.value)continue;
+  const item=document.createElement('button');item.type='button';item.className='cm-same-rival-option';
+  item.setAttribute('role','option');item.setAttribute('aria-selected',String(opt.value===native.value));
+  item.textContent=opt.textContent.replace(/\s*[·•]\s*4º\s*[ABC].*$/i,'');
+  item.addEventListener('click',()=>{
+   native.value=opt.value;native.dispatchEvent(new Event('change',{bubbles:true}));
+   samePickerRender();samePickerClose();button.focus();
+  });
+  list.append(item);
+ }
+ if(!samePickerReady){
+  samePickerReady=true;
+  button.addEventListener('click',()=>{
+   if($('mode').value==='challenge'&&!selectedOtherHouse){
+    toast('Escolha primeiro a Casa adversária.');return;
+   }
+   const open=list.hidden;
+   list.hidden=!open;button.setAttribute('aria-expanded',String(open));
+   $('setup')?.classList.toggle('cm-same-rivals-open',open);
+   if(open)list.querySelector('button[aria-selected="true"]')?.scrollIntoView({block:'nearest'});
+  });
+  button.addEventListener('keydown',event=>{
+   if(event.key==='ArrowDown'||event.key==='Enter'||event.key===' '){
+    if(list.hidden){event.preventDefault();button.click();list.querySelector('button')?.focus();}
+   }
+   if(event.key==='Escape')samePickerClose();
+  });
+  list.addEventListener('keydown',event=>{if(event.key==='Escape'){samePickerClose();button.focus()}});
+  document.addEventListener('pointerdown',event=>{
+   if(!list.hidden&&!event.target.closest('.cm-same-choice'))samePickerClose();
+  });
+  native.addEventListener('change',()=>{samePickerRender();samePickerClose()});
+ }
+}
+function syncSameHouseDuel(){
+ const mode=$('mode').value;
+ const same=mode==='challenge_same',other=mode==='challenge',illustrated=same||other;
+ const setup=$('setup'),panel=$('cm-same-house-duel'),slot=$('cm-same-house-select-slot');
+ const label=$('rival-label'),fields=document.querySelector('.setup-fields');
+ if(!setup||!panel||!slot||!label||!fields)return;
+ if(illustrated&&previousIllustratedMode!==mode)$('rival').value='';
+ previousIllustratedMode=illustrated?mode:'';
+ wasSameHouse=same;
+ setup.classList.toggle('cm-same-duel',illustrated);
+ setup.classList.toggle('cm-interclass-duel',other);
+ panel.hidden=!illustrated;
+ // O formulário antigo continua no DOM para os outros modos, mas não aparece neste painel.
+ const oldPicker=$('cm-v2-challenge-picker');
+ if(oldPicker){
+  oldPicker.hidden=illustrated;
+  oldPicker.inert=illustrated;
+  if(illustrated)oldPicker.style.setProperty('display','none','important');
+  else oldPicker.style.removeProperty('display');
+ }
+ const plate=$('cm-same-player-plate');
+ if(plate)plate.hidden=!illustrated;
+ cmShowActiveSession();
+ const title=$('cm-other-house-title');
+ if(title)title.hidden=!other;
+ const crest=$('cm-same-house-crest'),shields=$('cm-other-house-shields');
+ if(shields)shields.hidden=!other;
+ if(crest){
+  crest.hidden=other;
+  // Regras visuais antigas usam display:block!important. O atributo hidden sozinho
+  // não é suficiente para esconder o escudo da própria casa.
+  if(other)crest.style.setProperty('display','none','important');
+  else crest.style.removeProperty('display');
+ }
+ if(illustrated){
+  if(label.parentElement!==slot)slot.appendChild(label);
+  const h=$('player').value?.[0]||house;
+  const config={
+   A:['aguia.webp','Águia Dourada'],B:['leao.webp','Leão de Fogo'],
+   C:['dragao.webp','Dragão de Esmeralda']
+  }[h]||['aguia.webp','Águia Dourada'];
+  if(crest){crest.src='assets/v2/crests/'+config[0];crest.alt='Brasão da '+config[1];}
+  const currentId=$('player').value;
+  const ownName=$('cm-same-player-name'),ownDetails=$('cm-same-player-details');
+  if(ownName)ownName.textContent=byId(currentId);
+  if(ownDetails)ownDetails.textContent=H[h].grade+' · '+(TEAMS[currentId]||config[1]);
+  $('cm-same-house-description').textContent=other
+   ?'Escolha a Casa adversária, depois um arqueiro dessa turma. Nível difícil com alvo móvel e escudos.'
+   :'Escolha um arqueiro do 4º '+h+' para um duelo de cinco flechas no alvo horizontal em movimento.';
+  const opener=$('cm-same-open-rivals'),list=$('cm-same-rivals-list');
+  if(opener)opener.setAttribute('aria-label',other?'Selecione um adversário':'Selecione um colega da sua turma');
+  if(list)list.setAttribute('aria-label',other?'Arqueiros da turma adversária':'Arqueiros disponíveis da mesma turma');
+  // Mesma trilha difícil do Robô Difícil no duelo interturmas; mesma turma segue média.
+  $('challenge-level').value=other?'lendario':'avancado';
+  const mediumSeal=$('cm-same-medium-art'),hardSeal=$('cm-interclass-hard-badge');
+  if(mediumSeal)mediumSeal.hidden=other;
+  if(hardSeal)hardSeal.hidden=!other;
+  if(other)syncOtherHouseShields();
+  samePickerClose();
+  samePickerRender();
+ }else{
+  samePickerClose();
+  if(label.parentElement!==fields)fields.appendChild(label);
+ }
+}
+function syncOtherHouseShields(){
+ const container=$('cm-other-house-shields');
+ if(!container)return;
+ const own=$('player').value?.[0]||house;
+ const others=Object.keys(H).filter(h=>h!==own);
+ if(!others.includes(selectedOtherHouse))selectedOtherHouse='';
+ for(const button of container.querySelectorAll('[data-rival-house]')){
+  const h=button.dataset.rivalHouse,allowed=others.includes(h);
+  button.hidden=!allowed;
+  button.setAttribute('aria-pressed',String(allowed&&h===selectedOtherHouse));
+  button.classList.toggle('cm-other-house-dim',!!selectedOtherHouse&&h!==selectedOtherHouse);
+  button.title=allowed?H[h].grade+' · '+H[h].name:'';
+  button.setAttribute('aria-label',allowed?'Escolher '+H[h].grade+' — '+H[h].name:'Casa indisponível');
+ }
+}
+document.querySelectorAll('#cm-other-house-shields [data-rival-house]').forEach(button=>{
+ button.addEventListener('click',()=>{
+  if($('mode').value!=='challenge')return;
+  const chosen=button.dataset.rivalHouse,own=$('player').value?.[0]||house;
+  if(chosen===own||!H[chosen])return;
+  selectedOtherHouse=chosen;
+  $('rival').value='';
+  samePickerClose();
+  fillRivals();
+  syncOtherHouseShields();
+  samePickerRender();
+ });
+});
+function updateMode(){
+ const mode=$('mode').value,team=mode==='challenge_team',otherTeam=team&&$('team-scope').value==='other';
+ if(mode==='challenge'&&previousIllustratedMode!=='challenge')selectedOtherHouse='';
+ $('difficulty-label').classList.toggle('hidden',mode!=='bot');
+ $('rival-label').classList.toggle('hidden',!isDuel(mode));
+ $('team-label').classList.toggle('hidden',!team);
+ $('team-scope-label').classList.toggle('hidden',!team);
+ $('opponent-house-label').classList.toggle('hidden',!(mode==='challenge'||otherTeam));
+ $('opponent-team-label').classList.toggle('hidden',!team);
+ fillRivals();drawCourse();syncSameHouseDuel();
+}
+function byId(id){return choices(id?.[0]||'A').find(x=>x.id===id)?.name||'Arqueiro '+id}
+function nameOf(id){return id==='guest'?'Arqueiro convidado':byId(id)}
+function renderWind(wind){
+ const widget=$('wind');if(!widget)return;
+ const speed=Math.abs(wind),still=speed<0.15,left=wind<0;
+ widget.classList.toggle('wind-left',!still&&left);
+ widget.classList.toggle('wind-right',!still&&!left);
+ widget.classList.toggle('wind-calm',still);
+ widget.querySelector('.wind-speed').textContent=speed.toFixed(1).replace('.',',')+' km/h';
+ const direction=still?'SEM DESVIO':left?'DESVIA À ESQUERDA':'DESVIA À DIREITA';
+ const directionWidget=$('wind-direction')||widget;
+ directionWidget.querySelector('.wind-direction-text').textContent=direction;
+ if(directionWidget!==widget){
+  directionWidget.classList.toggle('wind-left',!still&&left);
+  directionWidget.classList.toggle('wind-right',!still&&!left);
+  directionWidget.classList.toggle('wind-calm',still);
+  directionWidget.setAttribute('aria-label','Direção do vento: '+direction.toLowerCase());
+ }
+ widget.setAttribute('aria-label','Vento: '+speed.toFixed(1).replace('.',',')+' quilômetros por hora. '+direction.toLowerCase()+'.');
+}
+function uiHud(){if(!match)return;
+ $('stage').dataset.matchMode=match.mode||'practice';
+ const progress=$('range-progress'),key=match.level+':'+match.scores.length;
+ const title=$('range-trail-title'),info=$('range-mode'),badge=$('arena-mode-badge');
+ const levelInfo=LEVELS[match.level]||LEVELS.iniciante;
+ if(title)title.textContent=levelInfo.icon+' '+levelInfo.title;
+ if(info)info.textContent=match.level==='avancado'?'Um disco móvel percorrendo a arena na horizontal':levelInfo.feature;
+ if(badge){badge.textContent=match.level==='iniciante'?'🎯 ALVO FIXO':match.level==='avancado'?'↔ ALVOS EM MOVIMENTO':'🛡️ ALVO MÓVEL + ESCUDOS';badge.dataset.level=match.level;}
+ $('stage').dataset.level=match.level;
+ if(progress&&progress.dataset.current!==key){
+   const distances=CIRCUITS[match.level]||CIRCUITS.iniciante;
+   progress.innerHTML=distances.map((meters,i)=>`<span class="range-step ${i<match.scores.length?'done':i===match.scores.length?'current':''}" aria-label="Etapa ${i+1}: ${meters} metros">${i<match.scores.length?'✓':'🎯'} ${meters}m</span>`).join('');
+   progress.dataset.current=key;
+ }
+$('hud-player').textContent=match.player+' · '+H[match.house].grade;$('hud-bot').textContent=match.mode==='bot'?'🤖 Robô · '+({easy:'Fácil',medium:'Médio',hard:'Difícil'}[match.difficulty]):match.mode==='practice'?'🎯 Treinamento':match.incoming?'⚔️ '+byId(match.incoming.playerId):'⚔️ '+byId(match.rivalId);$('hud-score').textContent=match.scores.reduce((a,b)=>a+b,0);$('hud-rival').textContent=match.onlineReplay?.length?(match.onlineReplayPoints||0):match.incoming?match.incoming.score:match.mode==='bot'?(match.botShots?.length?match.botShots.reduce((n,v)=>n+v,0):'?'):'—';renderWind(match.wind);const art=$('stage').classList.contains('cm-art-ready'),n=Math.min(match.scores.length+1,5);
+ const distanceValue=$('cm-distance-value');
+ if(distanceValue)distanceValue.textContent=Math.round(match.distance)+' m';
+ else $('distance').textContent=art?Math.round(match.distance)+' m':'🎯 ETAPA '+n+'/5 · '+Math.round(match.distance)+' METROS';
+ $('distance').setAttribute('aria-label','Etapa '+n+' de 5: '+Math.round(match.distance)+' metros');
+ const shotsValue=$('cm-shots-value');
+ if(shotsValue)shotsValue.textContent=n+' / 5';
+ else $('shots').textContent=art?n+' / 5':'🏹 FLECHA '+n+' / 5';
+ $('shots').setAttribute('aria-label','Flecha '+n+' de 5');
+ const p=holding?chargePower():.28;$('power').textContent='⚡ FORÇA '+Math.round(p*100)+'%';
+ if(holding)spriteHud?.setPower(p);
+}
+function stageSeconds(){
+ if(!match)return 0;
+ if(Number.isFinite(match.freezeTime))return match.freezeTime;
+ return Math.min(120,Math.max(0,(performance.now()-(match.stageStartedAt||performance.now()))/1000));
+}
+function worldSettings(){
+ const level=match?.level||'iniciante',index=match?.scores?.length||0,seconds=stageSeconds();
+ const dualTargets=false; // Rollback: alvo único e pontuação relativa ao alvo móvel
+ const motion=dualTargets?{x:0,y:0}:targetMotion(level,index,seconds);
+ const stage=$('stage'),w=stage?.clientWidth||1050,h=stage?.clientHeight||540;
+ const distance=match?.distance||10,scale=clamp(Math.pow(30/Math.max(10,distance),.65),.31,1.75);
+ const radius=Math.min(h*.105,w*.082)*scale,rules=match?.online?.rules??6;
+ return {distance,shift:(match?.shift||0)+(rules>=5?motion.x*radius/w:0),
+  verticalShift:rules>=5?motion.y*radius/h:0,
+  level,shotIndex:index,seconds,dualTargets,house:match?.house||house};
+}
+function ensureScene(){
+ if(!scene)scene=initScene($('world'),worldSettings);
+ scene.setHouse(house);scene?.setEquipment?.(equipment);scene?.setBackdropMode?.(spriteHud?.isReady?.()||false);
+ if(!atmosphere){
+  atmosphere=initAtmosphere($('stage'),()=>({
+   level:match?.level||'iniciante',index:Math.min(4,match?.scores?.length||0),
+   seconds:stageSeconds(),metrics:scene?.getTargetMetrics?.()
+  }));
+ }
+ atmosphere.setHouse(house);
+ atmosphere.setActive(view==='arena');
+}
+function changeTarget(){
+ if(!match)return;
+ const cfg=match.online?.settings?.[match.scores.length];
+ if(cfg){match.distance=cfg.distance;match.shift=cfg.shift;match.wind=cfg.wind;}
+ else{
+ match.distance=CIRCUITS[match.level]?.[match.scores.length]||CIRCUITS.iniciante[match.scores.length];
+ match.shift=Math.round(rand(-5,5))/100;
+ match.wind=Math.round(rand(-4,4)*(.65+Math.pow(match.distance/70,.45)*.55)*10)/10;
+}
+ match.stageStartedAt=performance.now();match.freezeTime=null;
+ scene?.setTargetShift(match.shift);uiHud();
+}
+const BOT_LEVEL_BY_DIFFICULTY=Object.freeze({easy:'iniciante',medium:'avancado',hard:'lendario'});
+function levelForMatch(mode,drawHandoff){
+ // Oponente robô e percurso são seleções diferentes: garantir que caminhem juntos
+ // mesmo ao entrar diretamente na apresentação VS, sem a tela de preparação.
+ if(mode==='bot')return BOT_LEVEL_BY_DIFFICULTY[$('difficulty').value]||'iniciante';
+ return drawHandoff||mode==='challenge_team'&&$('team-scope').value==='other'?'iniciante':$('challenge-level').value;
+}
+async function startMatch(accepted=null){
+ if(onlineLoading||startMatchPending)return;
+ startMatchPending=true;
+ let navigatingToArena=false;
+ try{
+ const fromInbox=accepted&&typeof accepted.id==='string'?accepted:null;
+ const rawHandoff=window.classmanaDrawHandoff;
+ const drawHandoff=!fromInbox&&rawHandoff&&
+   rawHandoff.mode==='challenge_team'&&
+   rawHandoff.playerId===$('player').value&&
+   rawHandoff.rivalId===$('rival').value&&
+   /^[ABC][0-9]{2}$/.test(rawHandoff.rivalId||'')&&
+   rawHandoff.rivalId[0]!==rawHandoff.playerId[0]?rawHandoff:null;
+ if(rawHandoff)window.classmanaDrawHandoff=null;
+ const mode=fromInbox?duelMode(fromInbox.kind):$('mode').value;
+ if(identifiedPlayerId&&online.user&&identifiedPlayerId!==online.user.id){toast('Sessão inconsistente. Encerre e entre novamente.');return}
+ let userId=$('player').value,rivalId=fromInbox?(fromInbox.creator.id===online.user?.id?fromInbox.recipient.id:fromInbox.creator.id):$('rival').value,challenge=null;
+ if(isDuel(mode)){
+  if(!/^[ABC][0-9]{2}$/.test(userId||'')){
+    setLobbyStep('perfil');populateIdentityOptions();
+    $('cm-identity-player')?.focus();
+    toast('Primeiro escolha seu nome na entrada do torneio.');
+    return;
+  }
+  /* API direta: o duelo acontece no GitHub Pages, sem portal Apps Script. */
+  if(!online.enabled||online.state!=='ready'){toast('⚠️ '+(online.lastError||'A Arena Online não conseguiu conectar ao Railway V2.'));return}
+  if(!online.user||online.user.id!==userId){
+    const selected=await loginStudent();
+    if(!selected)return;
+   }
+  userId=online.user.id;
+  if(!fromInbox){
+   if(!rivalId||!choices(rivalId[0]).some(x=>x.id===rivalId)){toast('Escolha um adversário.');return}
+   if(userId===rivalId){toast('Você não pode desafiar a si mesmo.');return}
+   if((mode==='challenge_same'&&userId[0]!==rivalId[0])||(mode==='challenge'&&userId[0]===rivalId[0])||
+      (mode==='challenge_team'&&userId[0]===rivalId[0]&&TEAMS[userId]===TEAMS[rivalId])){
+    toast('Escolha um adversário válido para este tipo de desafio.');return;
+   }
+  }else if(fromInbox.recipient.id!==userId&&fromInbox.creator.id!==userId){toast('Esse desafio não pertence à sua conta.');return;}
+  // Cinematic VS runs before the API creates a challenge. Cancel never leaves a ghost invite.
+  // A tela de sorteio já apresentou o confronto e o aluno já confirmou.
+  // Não exigir uma segunda confirmação VS após CONTINUAR.
+  if(!drawHandoff&&!fromInbox){
+   const versusAccepted=await cinematics.versus({
+    player:nameOf(userId),house:userId[0],gender:archerGender(),
+    rival:byId(rivalId),rivalHouse:rivalId?.[0],rivalId,
+    sound:effect=>arenaAudio.play(effect)
+   });
+   if(!versusAccepted)return;
+  }
+  const requestedAt=Date.now(),kind=duelKind(mode),level=mode==='challenge_team'?'iniciante':mode==='challenge_same'?'avancado':'lendario';
+  try{
+   onlineLoading=true;
+   $('start-game').disabled=true;
+   $('start-game').setAttribute('aria-busy','true');
+   $('start-game').setAttribute('aria-label','Registrando desafio online...');
+   $('online-status').textContent='⏳ Registrando convite no servidor V2...';
+   challenge=fromInbox||await online.create(kind,rivalId,level);
+  }catch(error){
+   // Se o servidor gravou mas a confirmação se perdeu, recuperar o convite
+   // novo pela caixa de entrada sem criar uma segunda disputa.
+   if(!fromInbox){
+    $('online-status').textContent='⏳ Verificando se o convite foi salvo...';
+    try{
+     const recent=await online.inbox();
+     challenge=recent.find(c=>c.creator?.id===userId&&c.recipient?.id===rivalId&&
+       c.kind===kind&&c.level===level&&c.status==='CRIADOR_JOGANDO'&&
+       new Date(c.created).getTime()>=requestedAt-4000)||null;
+    }catch(recoveryError){console.warn('Não foi possível recuperar convite online:',recoveryError);}
+   }
+   if(!challenge){
+    $('online-status').textContent='⚠️ Falha ao registrar convite: '+error.message;
+    toast('Não foi possível confirmar o desafio: '+error.message);
+    return;
+   }
+   toast('✅ Convite recuperado no servidor. Abrindo a arena...');
+  }finally{
+   onlineLoading=false;
+   $('start-game').disabled=false;
+   $('start-game').removeAttribute('aria-busy');
+   $('start-game').setAttribute('aria-label','Iniciar partida');
+   if(challenge)showOnlineStatus();
+  }
+ }
+ if(match?.running){match.running=false;match.locked=false;holding=false;$('stage').classList.remove('aiming','firing');scene?.setPower(0);}
+ if(online.user&&isDuel(mode)){userId=online.user.id;selectHouse(userId[0]);$('player').value=userId;}
+ match={house:userId==='guest'?house:userId[0],playerId:userId,player:nameOf(userId),mode,difficulty:$('difficulty').value,
+  rivalId,gender:drawHandoff?.gender||archerGender(),rivalGender:drawHandoff?.rivalGender||'m',
+  scores:[],running:true,locked:false,bow:equipment.bow,wind:0,distance:10,level:mode==='bot'?(BOT_LEVEL_BY_DIFFICULTY[$('difficulty').value]||'iniciante'):challenge?.level||(mode==='challenge_team'?'iniciante':mode==='challenge_same'?'avancado':mode==='challenge'?'lendario':levelForMatch(mode,drawHandoff)),shift:0,freezeTime:null,stageStartedAt:performance.now(),incoming:null,
+  online:challenge,onlineShots:[],onlineReplay:challenge?.recipient.id===userId?challenge.creatorShots:[],
+  onlineReplayPoints:0,botShots:[],botTotal:null,seed:Math.floor(rand(100000,999999))};
+ if(mode==='bot'){
+  const go=await cinematics.versus({player:match.player,house:match.house,gender:archerGender(),
+   rival:'ROBÔ ARQUEIRO',rivalHouse:'C',mode:'bot',sound:effect=>arenaAudio.play(effect)});
+  if(!go){match=null;return;}
+ }
+ reticle={x:.50,y:.45};cmResetResultPresentation();
+ $('instruction').textContent='MOVA A MIRA DO ARCO • SEGURE PARA PUXAR • SOLTE PARA ATIRAR';
+ if(document.body.dataset.page==='lobby'){
+  try{
+   sessionStorage.setItem('cm_active_archery_match_v2',JSON.stringify(match));
+   // Preservar o token de atualização visual ao sair do lobby:
+   // a arena.html também precisa ter URL nova para ignorar HTML em cache.
+   const visualFix=new URLSearchParams(location.search).get('visualFix');
+   const cacheQuery=visualFix&&/^[a-zA-Z0-9_-]{1,48}$/.test(visualFix)
+     ?'?visualFix='+encodeURIComponent(visualFix)
+     :drawHandoff?'?duelFlow=20261112-direct-v2':'';
+   if(drawHandoff)window.dispatchEvent(new Event('classmana:duel-launching'));
+   window.location.assign('./arena.html'+cacheQuery);
+   navigatingToArena=true;
+   return;
+  }catch(error){console.warn('Navegação entre páginas indisponível:',error)}
+ }
+ openView('arena');refreshArcher();ensureScene();changeTarget();updateReticle();uiHud();
+ }catch(error){
+  console.error('Erro ao iniciar duelo:',error);
+  toast('Não foi possível abrir o duelo: '+(error?.message||'erro desconhecido'));
+ }finally{
+ startMatchPending=false;
+ // Falha da API ou validação: liberar a tela de preparação para nova tentativa.
+ if(!navigatingToArena){
+  if(drawHandoff)window.dispatchEvent(new Event('classmana:duel-launch-failed'));
+  cinematics.dismissVersusTransition();
+ }
+}
+}
+
+function updateReticle(){
+  // A mira visível é o anel 3D preso ao arco, como na V1.
+  scene?.setAim(reticle.x,reticle.y);
+}
+function aim(e){
+ const rect=$('world').getBoundingClientRect();
+ reticle.x=clamp((e.clientX-rect.left)/rect.width,.06,.94);
+ reticle.y=clamp((e.clientY-rect.top)/rect.height,.08,.92);
+ updateReticle();
+}
+function levelScore(x,y,r){const norm=Math.hypot(x,y)/r;return norm>1?0:Math.max(1,10-Math.floor(norm*10))}
+function showDuelTurn(text,style='opponent'){
+ const stage=$('stage');
+ let panel=$('cm-duel-turn');
+ if(!panel){panel=document.createElement('div');panel.id='cm-duel-turn';panel.className='cm-duel-turn hidden';panel.setAttribute('role','status');panel.setAttribute('aria-live','polite');stage.appendChild(panel)}
+ // Moldura temática com identidade visual da casa rival. Não interfere no replay.
+ const robot=match?.mode==='bot';
+ const rivalHouse=(match?.online?.creator?.id?.[0]||match?.rivalId?.[0]||'');
+ const crests={A:'aguia-dourada',B:'leao-de-fogo',C:'dragao-esmeralda'};
+ const image=robot?'assets/ui/challenge/robo-arqueiro-oficial.webp':
+   crests[rivalHouse]?'assets/ui/crests/brasao-'+crests[rivalHouse]+'.png':'';
+ const name=robot?'ROBÔ ARQUEIRO':H[rivalHouse]?.name||'CASA ADVERSÁRIA';
+ const isResult=style==='result';
+ panel.replaceChildren();
+ panel.dataset.turn=style;
+ panel.dataset.house=robot?'robot':rivalHouse||'neutral';
+ const art=document.createElement('img');
+ art.className='cm-duel-turn-crest';art.alt='';art.setAttribute('aria-hidden','true');
+ if(image){art.src=image;panel.appendChild(art)}
+ const content=document.createElement('div');content.className='cm-duel-turn-content';
+ const eyebrow=document.createElement('span');eyebrow.className='cm-duel-turn-eyebrow';
+ eyebrow.textContent=isResult?'RESULTADO DO DISPARO':'TORNEIO DAS TRÊS CASAS';
+ const heading=document.createElement('strong');heading.className='cm-duel-turn-heading';
+ heading.textContent=isResult?text.replace(/^[^A-Za-zÀ-ÿ0-9]+/u,''):robot?'AGORA É A VEZ DO ROBÔ':'AGORA É A VEZ DO ADVERSÁRIO';
+ const foot=document.createElement('span');foot.className='cm-duel-turn-foot';
+ foot.textContent=isResult?'DISPARO REGISTRADO':name.toUpperCase();
+ content.append(eyebrow,heading,foot);panel.appendChild(content);
+ panel.classList.remove('hidden');
+ return panel;
+}
+function hideDuelTurn(){const panel=$('cm-duel-turn');if(panel)panel.classList.add('hidden')}
+
+/* Mesma reprodução para alunos, casas, sorteio e robô.
+   Mostra o alvo 3D aprovado na posição estimada da jogada adversária.
+   NÃO altera a pontuação, a física, o modelo do arco ou o projétil. */
+async function replayOpponentShot(shot,currentMatch,index){
+ if(match!==currentMatch||!currentMatch.running)return false;
+ const stage=$('stage'),w=stage?.clientWidth||1050,h=stage?.clientHeight||540;
+ const t=scene?.getTargetMetrics?.()||{x:w*.5,y:h*.45,r:Math.min(h*.105,w*.082)};
+ const time=Number.isFinite(Number(shot.time))?Number(shot.time):stageSeconds();
+ const power=Number(shot.power)||1;
+ const moving=currentMatch.level==='avancado'||currentMatch.level==='lendario';
+ const rules=currentMatch.online?.rules??6;
+ const before=moving&&rules>=5?targetMotion(currentMatch.level,index,stageSeconds()):{x:0,y:0};
+ const arrival=moving&&rules>=5?targetMotion(currentMatch.level,index,
+   time+flightSeconds(currentMatch.distance,power)):{x:0,y:0};
+ const cx=clamp(t.x+(arrival.x-before.x)*t.r,w*.08,w*.92),cy=clamp(t.y+(arrival.y-before.y)*t.r,h*.14,h*.86);
+ // O servidor guarda o impacto relativo ao alvo, não ao quadro do jogador.
+ const dx=Number(shot.impactDx??shot.dx)||0,dy=Number(shot.impactDy??shot.dy)||0;
+ const px=clamp((cx+dx*t.r)/w,.01,.99),py=clamp((cy+dy*t.r)/h,.01,.99);
+ const ok=scene?.beginOpponentReplay?.({x:cx/w,y:cy/h});
+ if(!ok)return false;
+ try{
+  arenaAudio.play('rival-shot');
+  await Promise.race([scene?.fire?.({x:px,y:py,power}),new Promise(resolve=>setTimeout(resolve,1700))]);
+  if(match!==currentMatch||!currentMatch.running)return false;
+  scene?.impact?.({x:px,y:py,score:Number(shot.score)||0});
+  if(Number(shot.score)>0)arenaAudio.play('impact');
+  await new Promise(resolve=>setTimeout(resolve,380));
+  return match===currentMatch&&currentMatch.running;
+ }catch(error){console.warn('Replay do adversário:',error);return false}
+ finally{scene?.endOpponentReplay?.()}
+}
+
+async function duelTurnPause(ms,currentMatch){
+ await new Promise(resolve=>setTimeout(resolve,ms));
+ return match===currentMatch&&currentMatch.running;
+}
+async function fire(power){
+ if(!match?.running||match.locked||match.scores.length>=5)return;
+ const currentMatch=match,shotIndex=match.scores.length;
+ match.freezeTime=stageSeconds();
+ match.locked=true;holding=false;$('stage').classList.remove('aiming');
+ arenaAudio.play('release');
+ const w=$('stage').clientWidth,h=$('stage').clientHeight;
+ const t=scene?.getTargetMetrics?.()||{x:w*(.5+match.shift),y:h*.45,r:Math.min(h*.105,w*.082)};
+ const sight=scene?.getAimPoint?.();
+ if(!sight||!Number.isFinite(sight.x)||!Number.isFinite(sight.y)){match.locked=false;return toast('A mira ainda não está pronta.');}
+ const dx=(sight.x*w-t.x)/t.r,dy=(sight.y*h-t.y)/t.r;
+ // Round scores online are calculated again by Apps Script using these normalized offsets.
+ const activeBow=(!match.online||Number(match.online.rules)>=7)?(match.bow||equipment.bow):'classico';
+ const tuning=BOW_RULES[activeBow]||BOW_RULES.classico;
+ /* Guardar coordenadas do impacto final, não da mira inicial. */
+ const distanceFactor=distanceDifficulty(match.distance);
+ const drift=match.wind*tuning.wind*t.r*.040*distanceFactor,fall=(1-power)*t.r*.70*distanceFactor;
+ const jitter=match.online?0:(1-power)*t.r*.14*Math.min(2,distanceFactor);
+ const ix=sight.x*w+drift+rand(-.08,.08)*jitter;
+ const iy=sight.y*h+fall+rand(-.06,.06)*jitter;
+ const impactDx=(ix-t.x)/t.r,impactDy=(iy-t.y)/t.r;
+ const flight=flightSeconds(match.distance,power);
+ const dualTargets=false; // Rollback do recálculo por discos independentes
+ const before=targetMotion(match.level,shotIndex,match.freezeTime);
+ const after=targetMotion(match.level,shotIndex,match.freezeTime+flight);
+ const rules=match.online?.rules??6;
+ const landingX=impactDx-(dualTargets?0:rules>=5?after.x-before.x:0);
+ const landingY=impactDy-(dualTargets?0:rules>=5?after.y-before.y:0);
+ const blocked=obstacleBlocks(match.level,shotIndex,match.freezeTime+flight,landingX,landingY);
+ // Cada disco clonado possui um círculo de colisão próprio (70% do raio).
+ // A posição é avaliada quando a flecha chega, não quando foi disparada.
+ const twins=dualTargets?mediumTwinTargets(match.freezeTime+flight):null;
+ const candidate=twins?.map((disc,i)=>({
+  index:i,norm:Math.hypot((landingX-disc.x)/disc.r,(landingY-disc.y)/disc.r)*tuning.ring
+ })).sort((a,b)=>a.norm-b.norm)[0];
+ const norm=candidate?candidate.norm:Math.hypot(landingX,landingY)*tuning.ring;
+ const targetIndex=candidate&&norm<=1?candidate.index:null;
+ const base=blocked||norm>1?0:Math.max(1,10-Math.floor(norm*10));
+ const score=base>0?Math.min(10,base+tuning.bonus):0;
+ if(currentMatch.online)currentMatch.onlineShots.push({dx:landingX,dy:landingY,impactDx:landingX,impactDy:landingY,blocked,power,time:match.freezeTime,bow:activeBow,score});
+ // Keep launch time intact until collision and server validation are calculated.
+ match.freezeTime=null; // The target keeps moving while the arrow flies.
+ $('stage').classList.add('firing');arenaAudio.play('fly');
+ try{await Promise.race([scene?.fire?.({x:ix/w,y:iy/h,power}),new Promise(resolve=>setTimeout(resolve,1700))]);}
+ catch(e){console.warn('Animação da flecha:',e)}
+ $('stage').classList.remove('firing');
+ if(match!==currentMatch||!currentMatch.running)return;
+ scene?.impact?.({x:ix/w,y:iy/h,score,blocked,targetIndex});
+ // Som fisico do contato da flecha, independente dos aplausos.
+ if(score>0&&!blocked)arenaAudio.play('impact');
+ match.scores.push(score);$('hud-score').textContent=match.scores.reduce((a,b)=>a+b,0);
+ try{if(document.body.dataset.page==='arena')sessionStorage.setItem('cm_active_archery_match_v2',JSON.stringify(match))}catch{}
+ showHit(score,ix/w,iy/h,blocked);
+ cinematics.impactSparkle($('stage'),ix/w,iy/h,score,match.house);
+ if(blocked){arenaAudio.play('block');toast('🛡️ O ESCUDO DEFENDEU O ALVO!');}
+ else if(score===10){arenaAudio.play('applause',score);toast('🎯 ACERTO PERFEITO! +10 pontos');}
+ else if(score===0){arenaAudio.play('boo');toast('📣 A TORCIDA REAGIU! Tente novamente.');}
+ else arenaAudio.play('hit',score);
+ // The challenger already completed these five shots. Reproduce them one at a time,
+ // with a clear turn announcement after the current student's result.
+ // Robô: cada flecha usa o mesmo replay 3D; o resultado continua sendo
+ // calculado pela função de dificuldade já existente, agora uma vez por turno.
+ if(match.mode==='bot'){
+  const average=match.scores.reduce((a,b)=>a+b,0)/match.scores.length;
+  const score=chooseRobotScore(match.difficulty,average);
+  match.botShots??=[];match.botShots.push(score);
+  const radius=score===10?.04:score>=8?.23:score>=6?.44:score>=4?.63:score>=2?.82:1.18;
+  const angle=rand(0,Math.PI*2);
+  const shot={score,dx:radius*Math.cos(angle),dy:radius*Math.sin(angle),
+    time:stageSeconds(),power:.85};
+  if(!await duelTurnPause(650,currentMatch))return;
+  showDuelTurn('🤖 VEZ DO ROBÔ','opponent');
+  if(!await duelTurnPause(950,currentMatch)){hideDuelTurn();return;}
+  hideDuelTurn();
+  if(!await replayOpponentShot(shot,currentMatch,shotIndex))return;
+  $('hud-rival').textContent=match.botShots.reduce((a,b)=>a+b,0);
+  showDuelTurn('🎯 ROBÔ: '+score+' PONTOS','result');
+  if(!await duelTurnPause(750,currentMatch)){hideDuelTurn();return;}
+  hideDuelTurn();
+  $('instruction').textContent='🏹 SUA VEZ • MIRE E SOLTE PARA DISPARAR';
+ }
+ const ghost=match.onlineReplay?.[shotIndex];
+ if(ghost&&match.online){
+  // Let the student's own impact/score remain visible before changing turns.
+  if(!await duelTurnPause(1150,currentMatch))return;
+  const opponentName=match.online.creator?.name||'ADVERSÁRIO';
+  const turnPanel=showDuelTurn('⚔️ VEZ DO ADVERSÁRIO','opponent');
+  $('instruction').textContent='⚔️ VEZ DO ADVERSÁRIO • AGUARDE A FLECHA';
+  if(!await duelTurnPause(1500,currentMatch)){hideDuelTurn();return;}
+  turnPanel.classList.add('hidden');
+  if(match!==currentMatch||!currentMatch.running)return;
+  if(!await replayOpponentShot(ghost,currentMatch,shotIndex))return;
+  match.onlineReplayPoints+=Number(ghost.score)||0;
+  $('hud-rival').textContent=match.onlineReplayPoints;
+  $('instruction').textContent='⚔️ '+opponentName+' • '+ghost.score+' PONTOS';
+  showDuelTurn('🎯 ADVERSÁRIO: '+ghost.score+' PONTOS','result');
+  if(!await duelTurnPause(1050,currentMatch)){hideDuelTurn();return;}
+  hideDuelTurn();
+  $('instruction').textContent='🏹 SUA VEZ • MIRE COM O ARCO E SOLTE PARA DISPARAR';
+ }
+ if(match.scores.length>=5){setTimeout(()=>{if(match===currentMatch&&currentMatch.running)finishMatch()},580);}
+ else{setTimeout(()=>{if(match===currentMatch&&currentMatch.running){changeTarget();match.locked=false;}},520);}
+}
+
+function showHit(score,x,y,blocked=false){const el=$('hit');el.textContent=blocked?'🛡️ ESCUDO!':score?'+'+score+' PONTOS':'FORA DO ALVO';el.style.left=(x*100)+'%';el.style.top=clamp(y*100-12,18,64)+'%';el.classList.remove('show');void el.offsetWidth;el.classList.add('show')}
+function chooseRobotScore(difficulty,playerAverage){const base={easy:5.1,medium:6.7,hard:7.45}[difficulty],adjust=clamp((playerAverage-5.5)*.17,-.7,.7);let result=clamp(base+adjust+rand(-3.3,3.3),0,10);return result>=9.25?10:result>=7?8:result>=5?6:result>=3?4:result>=1.5?2:0;}
+function renderFinishScore(own,opponent,opponentLabel='ADVERSÁRIO'){
+ const area=$('finish-results');if(!area)return;
+ area.replaceChildren();
+ const make=(label,value,modifier)=>{
+  const cell=document.createElement('div');cell.className='cm-score-cell '+modifier;
+  const top=document.createElement('span');top.className='cm-score-label';top.textContent=label;
+  const big=document.createElement('strong');big.className='cm-score-value';big.textContent=String(value);
+  const unit=document.createElement('span');unit.className='cm-score-unit';unit.textContent=value==='—'||value==='AGUARDANDO'?'':'PONTOS';
+  cell.append(top,big,unit);return cell;
+ };
+ area.classList.add('cm-score-grid');
+ area.append(make('VOCÊ',own,'cm-score-own'),make(opponentLabel,opponent,'cm-score-other'));
+}
+async function finishMatch(){
+ if(!match||match.scores.length<5)return;
+ const current=match;match.locked=true;const finish=$('finish');finish.classList.remove('hidden');
+ // Arte dos resultados é composta por personagens separados, sem painel cobrindo o cenário.
+ const heroOwn=$('finish-hero-own'),heroRival=$('finish-hero-rival');
+ if(heroOwn){heroOwn.src=archerImage();heroOwn.style.display='block';}
+ if(heroRival){
+  const opponentHouse=isDuel(match.mode)?String(match.rivalId||'').charAt(0):'';
+  const crests={A:'aguia-dourada',B:'leao-de-fogo',C:'dragao-esmeralda'};
+  heroRival.style.display=crests[opponentHouse]?'block':'none';
+  if(crests[opponentHouse])heroRival.src='assets/ui/crests/brasao-'+crests[opponentHouse]+'.png';
+ }
+ $('share-result').classList.add('hidden');
+ $('share-result').classList.remove('cm-retry');
+ if(match.online){
+  $('finish-title').textContent='⏳ SALVANDO RESULTADO NO TORNEIO V2...';
+  $('finish-desc').textContent='Seus disparos estão sendo validados e registrados no placar exclusivo da V2.';
+  $('finish-results').classList.remove('cm-score-grid');$('finish-results').textContent='🏹 5 / 5 FLECHAS';
+  try{
+   let response;
+   const shotScores=current.onlineShots.map(shot=>Number(shot.score));
+   if(shotScores.length!==5||
+      shotScores.some((score,i)=>!Number.isInteger(score)||score!==current.scores[i])){
+     throw Error('As cinco flechas da arena não correspondem aos dados enviados. Resultado preservado para verificação.');
+   }
+   try{response=await online.submit(match.online.id,match.onlineShots);}
+   catch(err){
+    // Só recuperar um envio anterior se ele contiver exatamente estas cinco flechas.
+    // Nunca usar a pontuação de uma disputa antiga como resultado desta partida.
+    let state;
+    try{state=await online.challenge(match.online.id)}catch{throw err}
+    const isCreator=current.playerId===state.creator.id;
+    const savedShots=isCreator?state.creatorShots:state.recipientShots;
+    const savedScore=Number(isCreator?state.creatorScore:state.recipientScore);
+    const matches=Array.isArray(savedShots)&&savedShots.length===current.onlineShots.length&&
+      savedShots.every((shot,i)=>Number(shot.score)===shotScores[i]&&
+        Math.abs(Number(shot.dx)-Number(current.onlineShots[i].dx))<1e-8&&
+        Math.abs(Number(shot.dy)-Number(current.onlineShots[i].dy))<1e-8);
+    if(!matches||!Number.isInteger(savedScore)){
+      throw Error('Falha ao registrar esta partida: '+err.message+
+        '. O resultado antigo do servidor não será reutilizado.');
+    }
+    response={score:savedScore,shots:savedShots,challenge:state};
+   }
+   if(match!==current)return;
+   const localScores=[...current.scores];
+   const localTotal=localScores.reduce((sum,points)=>sum+points,0);
+   const serverShots=response.shots||[];
+   const serverTotal=Number(response.score);
+   if(serverShots.length!==localScores.length||
+      !Number.isInteger(serverTotal)||
+      serverTotal!==localTotal||
+      serverShots.some((shot,i)=>Number(shot.score)!==localScores[i])){
+     throw Error('Pontuação do duelo divergente. Arena: '+localTotal+
+       ' pontos; servidor: '+(Number.isFinite(serverTotal)?serverTotal:'sem total')+
+       '. O resultado não será apresentado como correto.');
+   }
+   current.running=false;current.locked=true;current.onlineSaveFailed=false;
+   const ch=response.challenge,total=localTotal;
+   current.scores=localScores;
+   const isCreator=current.playerId===ch.creator.id;
+   const rival=isCreator?ch.recipientScore:ch.creatorScore;
+   let title,desc;
+   if(isCreator&&rival===null){
+    title='🏹 DESAFIO ENVIADO!';
+    desc='Você fez '+total+' pontos. '+ch.recipient.name+' verá o convite ao escolher seu nome e poderá aceitar ou recusar.';
+   }else{
+    title=total>rival?'🏆 VITÓRIA NO DESAFIO!':total===rival?'🤝 EMPATE HONROSO!':'🏹 CONTINUE TREINANDO!';
+    desc='Resultado salvo: '+total+' pontos contra '+rival+' pontos de '+(isCreator?ch.recipient.name:ch.creator.name)+'.';
+   }
+   $('finish-title').textContent=title;$('finish-desc').textContent=desc;
+   if(title.includes('VITÓRIA'))arenaAudio.play('victory');
+   else if(rival!==null&&total<rival)arenaAudio.play('defeat');
+   renderFinishScore(total,rival===null?'AGUARDANDO':rival);
+   cinematics.resultView({player:match.player,house:match.house,gender:archerGender(),
+    rival:isCreator?ch.recipient.name:ch.creator.name,rivalHouse:match.rivalId?.[0]||'A',
+    ownShots:response.shots||[],rivalShots:(isCreator?ch.recipientShots:ch.creatorShots)||[],
+    opponent:rival===null?'—':rival,mode:'duel',ownTotal:total,rivalTotal:rival===null?null:Number(rival)});
+   $('share-help').textContent='✅ Resultado registrado no servidor do torneio.';
+   $('hud-score').textContent=total;$('hud-rival').textContent=rival===null?'—':rival;
+   refreshInbox().catch(console.warn);renderRanking().catch(console.warn);
+   void syncEquipmentProgress(current.playerId);
+  }catch(error){
+   if(match!==current)return;current.onlineSaveFailed=true;current.running=true;
+   $('finish-title').textContent='⚠️ RESULTADO AINDA NÃO CONFIRMADO';
+   $('finish-desc').textContent='O servidor não confirmou a gravação: '+error.message;
+   $('finish-results').classList.remove('cm-score-grid');
+   $('finish-results').textContent='Pontos na arena: '+current.scores.reduce((sum,n)=>sum+n,0)+'. As cinco flechas permanecem nesta partida.';
+   $('share-help').textContent='Tente salvar novamente antes de sair da arena.';
+   $('share-result').classList.remove('hidden');$('share-result').classList.add('cm-retry');$('share-result').textContent='🔄 TENTAR SALVAR NO PLACAR';
+  }
+  return;
+ }
+ current.running=false;
+ const total=match.scores.reduce((a,b)=>a+b,0),
+  bot=match.mode==='bot'?(match.botShots?.length===5?match.botShots:Array.from({length:5},()=>chooseRobotScore(match.difficulty,total/5))):[],
+  rivalScore=match.mode==='bot'?bot.reduce((a,b)=>a+b,0):undefined;
+ // Resultado: sem informações repetidas no cabeçalho.
+ const title=match.mode==='practice'?'TREINAMENTO CONCLUÍDO':
+  total>rivalScore?'VITÓRIA':total===rivalScore?'EMPATE':'DERROTA';
+ $('finish-title').textContent=title;
+ $('finish-desc').textContent='';
+ // Treino livre é um espelho do próprio aluno: ambos exibem seu total real.
+ renderFinishScore(total,match.mode==='practice'?total:rivalScore,
+  match.mode==='practice'?'TREINO LIVRE':'ROBÔ');
+ cinematics.resultView({player:match.player,house:match.house,gender:archerGender(),
+  rival:match.mode==='bot'?'ROBÔ ARQUEIRO':'SEU RECORDE',
+  rivalHouse:match.mode==='bot'?'C':match.house,rivalGender:archerGender(),
+  ownShots:match.scores,rivalShots:bot,
+  opponent:rivalScore===undefined?'—':rivalScore,mode:match.mode,ownTotal:total,rivalTotal:rivalScore??null});
+ if(match.mode==='practice')arenaAudio.play('completion');
+  else if(match.mode==='bot')arenaAudio.play(total>rivalScore?'victory':total<rivalScore?'defeat':'banner');
+ // Treino local: sem aviso redundante sobre o ranking na tela final.
+ $('share-help').textContent='';
+ if(match.playerId!=='guest')persist({house:match.house,id:match.playerId,score:total,mode:match.mode,win:rivalScore===undefined?null:total>rivalScore});
+ uiHud();
+}
+
+function encode(d){const s=JSON.stringify(d),arr=new TextEncoder().encode(s);let bs='';arr.forEach(v=>bs+=String.fromCharCode(v));return btoa(bs).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function decode(s){const b=s.replace(/-/g,'+').replace(/_/g,'/');const raw=atob(b);return JSON.parse(new TextDecoder().decode(Uint8Array.from(raw,c=>c.charCodeAt(0))))}
+function createLink(){if(!match)return;const total=match.scores.reduce((a,b)=>a+b,0);let d=match.incoming?{v:2,complete:true,a:{house:match.incoming.house,id:match.incoming.playerId,score:match.incoming.score},b:{house:match.house,id:match.playerId,score:total}}:{v:2,playerId:match.playerId,house:match.house,rivalId:match.rivalId,score:total,seed:match.seed};return `${location.href.split('#')[0]}#duel=${encode(d)}`;}
+async function share(){const link=createLink();try{await navigator.clipboard.writeText(link);toast('Link copiado! Envie ao outro arqueiro.')}catch{window.prompt('Copie o link do desafio:',link)}}
+function processLink(){try{const h=location.hash;if(!h.startsWith('#duel='))return;const d=decode(h.slice(6));if(d.v!==2)return;if(d.complete){toast('Resultado compartilhado: '+d.a.score+' × '+d.b.score+' pontos.');location.hash='';return}if(typeof d.playerId!=='string'||typeof d.rivalId!=='string'||!H[d.house]||!H[d.rivalId[0]]||d.playerId===d.rivalId||!Number.isInteger(d.score)||d.score<0||d.score>50||!choices(d.house).some(x=>x.id===d.playerId)||!choices(d.rivalId[0]).some(x=>x.id===d.rivalId))return;incoming=d;selectHouse(d.rivalId[0]);$('player').value=d.rivalId;$('mode').value=d.house===d.rivalId[0]?'challenge_same':'challenge';updateMode();$('rival-label').classList.add('hidden');$('difficulty-label').classList.add('hidden');toast('⚔️ Desafio recebido de '+byId(d.playerId)+' — '+d.score+' pontos!');setLobbyStep('partida');}catch(e){console.warn('Desafio inválido',e)}}
+const htmlSafe=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function cmRankMode(){
+ const root=$('view-ranking');if(!root)return;
+ const mode=scoreTab==='classes'?'classes':'players';root.dataset.rankMode=mode;
+ if($('cm-panel-archers'))$('cm-panel-archers').hidden=mode!=='players';
+ if($('cm-panel-houses'))$('cm-panel-houses').hidden=mode!=='classes';
+ document.querySelectorAll('#ranking-tabs [data-rank]').forEach(btn=>{
+  const chosen=btn.dataset.rank===mode;
+  btn.classList.toggle('active',chosen);btn.setAttribute('aria-selected',String(chosen));btn.tabIndex=chosen?0:-1;
+  const art=btn.querySelector('.cm-rank-tab-art');
+  if(art){
+   const type=btn.dataset.rank==='players'?'arqueiros':'turmas';
+   const filename=type==='arqueiros'
+    ?(chosen?'aba-arqueiros-ativa-recortado.webp':'aba-arqueiros-inativa.webp')
+    :(chosen?'aba-turmas-ativa.webp':'aba-turmas-inativa-recortado.webp');
+   const next='assets/ui/ranking-v2/'+filename;
+   if(art.getAttribute('src')!==next)art.setAttribute('src',next);
+  }
+ });
+}
+async function renderRanking(){
+ const status=$('ranking-status'),classesHost=$('rank-houses'),playersHost=$('rank-players');
+ if(!status||!classesHost||!playersHost)return;cmRankMode();
+ if(!online.enabled){status.textContent='⚠️ A API de ranking não está configurada.';
+  classesHost.innerHTML='<div class="empty">Placar indisponível.</div>';
+  playersHost.innerHTML='<div class="empty">Placar indisponível.</div>';return;}
+ status.textContent='⏳ Consultando o ranking oficial do torneio...';
+ try{
+  const data=await online.ranking();
+  const matches=Number(data.games)||0,allClasses=Array.isArray(data.classes)?data.classes:[],allPlayers=Array.isArray(data.players)?data.players:[];
+  status.textContent='🏆 '+matches+' duelos concluídos · Atualizado às '+new Date().toLocaleTimeString('pt-BR');
+  const assets='assets/ui/ranking-v2/elementos/';
+  const medals=['medalha_1_ouro.png','medalha_2_prata.png','medalha_3_bronze.png'];
+  const medalImg=i=>i<3?'<img class="cm-rank-medal" src="'+assets+medals[i]+'" alt="'+(i+1)+'º lugar">':'<span class="cm-rank-place">'+(i+1)+'º</span>';
+  const num=v=>Math.max(0,Number(v)||0).toLocaleString('pt-BR');
+  playersHost.innerHTML=allPlayers.slice(0,50).map((p,i)=>{
+   const h=H[p.house]||{grade:'Turma não cadastrada',name:'Casa não cadastrada'};
+   const className=i===0?' cm-rank-gold':i===1?' cm-rank-silver':i===2?' cm-rank-bronze':'';
+   return '<div class="cm-rank-row'+className+'">'+
+     '<div class="cm-rank-placement">'+medalImg(i)+'</div>'+
+     '<span class="cm-rank-name">'+htmlSafe(p.name)+'</span>'+
+     '<span class="cm-rank-house-name">'+htmlSafe(h.grade)+' · '+htmlSafe(h.name)+'</span>'+
+     '<span class="cm-rank-score">'+num(p.wins)+' V · '+num(p.losses)+' D · '+num(p.draws)+' E · '+num(p.total)+' pts</span>'+
+     '</div>';
+  }).join('')||'<div class="empty">Ainda não há duelos concluídos.</div>';
+  const crestByHouse={A:'aguia-dourada',B:'leao-de-fogo',C:'dragao-esmeralda'};
+  const statIcon={points:'icone_trofeu.png',wins:'icone_espadas.png',draws:'icone_aperto_maos.png',
+    losses:'icone_derrota_x.png',accepted:'icone_espadas.png',refused:'icone_recusado.png',time:'icone_ampulheta.png'};
+  classesHost.innerHTML=allClasses.slice(0,3).map((row,i)=>{
+   const h=H[row.name],label=h?(h.grade+' · '+h.name):String(row.name);
+   const crest=crestByHouse[row.name];
+   const stats=[
+    ['wins','Vitórias',num(row.wins)],
+    ['points','Pontos',num(row.total)+' pts'],
+    ['draws','Empates',num(row.draws)],
+    ['losses','Derrotas',num(row.losses)],
+    ['accepted','Duelos aceitos',row.accepted==null?'—':num(row.accepted)],
+    ['refused','Duelos recusados',row.refused==null?'—':num(row.refused)],
+    ['time','Tempo jogado','—']
+   ];
+   return '<article class="cm-rank-house-card cm-house-place-'+(i+1)+'">'+
+    '<div class="cm-house-top">'+medalImg(i)+
+    (crest?'<img class="cm-house-crest" src="assets/ui/crests/brasao-'+crest+'.png" alt="">':'')+'</div>'+
+    '<h3>'+htmlSafe(label)+'</h3><div class="cm-house-stat-grid">'+
+    stats.map(([type,key,value])=>'<div class="cm-house-stat"><img src="'+assets+statIcon[type]+'" alt="" aria-hidden="true"><span class="cm-house-stat-label">'+key+'</span><b>'+value+'</b></div>').join('')+
+    '</div><div class="cm-house-total">🏆 Total de partidas: '+num(row.plays)+'</div></article>';
+  }).join('')||'<div class="empty">Nenhum registro de turma disponível.</div>';
+ }catch(err){
+  status.textContent='⚠️ Falha ao consultar o ranking no servidor: '+err.message;
+  classesHost.innerHTML='<div class="empty">Não foi possível atualizar a classificação.</div>';
+  playersHost.innerHTML='<div class="empty">Os resultados registrados não foram apagados. Tente novamente.</div>';
+ }
+}
+function showOnlineStatus(){
+ const active=online.enabled&&online.state==='ready',user=online.user;
+ $('online-status').classList.toggle('ok',active);
+ $('online-status').classList.toggle('error',!active);
+ $('online-account-name').textContent=user?'🏹 '+user.name+' · 4º '+user.house+' · '+user.team:'🏹 Escolha seu nome na lista';
+ if($('player'))$('player').disabled=Boolean(identifiedPlayerId);
+ const exitBtn=$('cm-end-session');if(exitBtn)exitBtn.hidden=!Boolean(identifiedPlayerId);
+ $('online-banner').textContent=active?'🟢 PLACAR ONLINE':online.state==='portal'?'⚔️ ENTRAR NA ARENA ONLINE':'⚠️ TORNEIO ONLINE INDISPONÍVEL';
+ $('online-status').textContent=online.state==='portal'?'⚔️ Escolha um desafio para entrar na Arena Online do ClassMana.':!online.enabled?'⚠️ Desafios online aguardam a configuração do professor.':
+  !active&&online.state==='error'?'⚠️ '+(online.lastError||'Não foi possível conectar ao servidor de desafios.'):
+  !active?'⏳ Verificando conexão...':user?'✅ Desafios disponíveis. Nenhuma senha ou PIN.':'✅ Placar conectado. Selecione seu nome.';
+ $('logout').classList.toggle('hidden',!user);
+ $('open-inbox').disabled=!active&&online.state!=='portal';
+ const retry=$('retry-online');if(retry){retry.classList.toggle('hidden',active||!online.enabled);retry.textContent=online.state==='portal'?'⚔️ ABRIR ARENA ONLINE':'↻ RECONECTAR';}
+ if(user&&(document.body.dataset.page!=='lobby'||(identifiedPlayerId&&identifiedPlayerId===user.id))&&($('player').value!==user.id||house!==user.house)){
+  selectHouse(user.house);$('player').value=user.id;fillRivals();
+ }
+}
+async function loginStudent(){
+ const id=$('player').value;
+ if(identifiedPlayerId&&id!==identifiedPlayerId){toast('Este jogador não é o da sessão atual.');return null;}
+ if(!id||id==='guest'){toast('Escolha seu nome na lista.');return null;}
+ if(!online.enabled||online.state!=='ready'){toast('⚠️ '+(online.lastError||'Aguardando atualização do servidor de desafios.'));return null;}
+ if(online.user?.id===id)return online.user;
+ try{
+  const user=await online.login(id);
+  identifiedPlayerId=user.id;cmSaveStudent(user.id);
+  if(document.body.dataset.page==='lobby'&&gearProgress.playerId!==user.id)loadPlayerEquipment(user.id);
+  else void syncEquipmentProgress(user.id);
+  showOnlineStatus();
+  // A confirmação do perfil libera imediatamente a partida; a caixa
+  // de convites não pode travar o botão Iniciar por demora do Google.
+  toast('✅ Perfil confirmado. Você já pode jogar.');
+  // Atualizar o contador sem abrir a caixa de desafios automaticamente.
+  void refreshInbox().then(rows=>{
+   if(online.user?.id!==user.id)return;
+   const pending=rows.filter(c=>c.recipient.id===user.id&&c.status==='PENDENTE').length;
+   if(pending)toast('🔔 Você recebeu '+pending+' desafio(s)! Abra Meus desafios para ver.');
+  }).catch(error=>console.warn('Convites temporariamente indisponíveis, mas perfil já confirmado:',error));
+  return user;
+ }catch(error){toast('⚠️ Não foi possível selecionar o perfil: '+error.message);return null;}
+}
+function renderInbox(){
+ const list=$('inbox-list');if(!list)return;
+ list.replaceChildren();
+ const id=online.user?.id;
+ $('inbox-status').textContent=id?
+  'Seus desafios em aberto aparecem primeiro. Resultados anteriores ficam no histórico.':
+  'Escolha um jogador para consultar os desafios.';
+ if(!id){list.innerHTML='<div class="empty">Selecione seu jogador.</div>';return}
+ const rows=onlineInbox.filter(ch=>ch?.id&&ch.creator?.id!==ch.recipient?.id&&
+   (ch.creator?.id===id||ch.recipient?.id===id));
+ // Use an explicit allow-list: terminal and unknown statuses must never inflate open challenges.
+ const statusOf=ch=>String(ch.status||'').trim().toUpperCase();
+ const finished=rows.filter(ch=>statusOf(ch)==='CONCLUIDO');
+ const archived=rows.filter(ch=>['RECUSADO','RECUSADA','REJEITADO','DECLINED'].includes(statusOf(ch)));
+ const open=rows.filter(ch=>['PENDENTE','ACEITO','CRIADOR_JOGANDO'].includes(statusOf(ch)));
+ const other=rows.filter(ch=>!['CONCLUIDO','RECUSADO','RECUSADA','REJEITADO','DECLINED','PENDENTE','ACEITO','CRIADOR_JOGANDO'].includes(statusOf(ch)));
+ const score=(ch,mine)=>Number(mine?ch.creatorScore:ch.recipientScore);
+ const otherScore=(ch,mine)=>Number(mine?ch.recipientScore:ch.creatorScore);
+ const wins=finished.filter(ch=>{const mine=ch.creator.id===id;return score(ch,mine)>otherScore(ch,mine)}).length;
+ const losses=finished.filter(ch=>{const mine=ch.creator.id===id;return score(ch,mine)<otherScore(ch,mine)}).length;
+ const draws=finished.length-wins-losses;
+ const summary=document.createElement('div');summary.className='cm-duel-summary';
+ for(const [name,count,cls] of [['Em aberto',open.length,'open'],['Recusados',archived.length,'declined'],['Vitórias',wins,'win'],['Derrotas',losses,'loss'],['Empates',draws,'draw']]){
+  const cell=document.createElement('div');cell.className='cm-duel-stat cm-stat-'+cls;
+  const n=document.createElement('strong');n.textContent=String(count);
+  const label=document.createElement('span');label.textContent=name;cell.append(n,label);summary.appendChild(cell);
+ }
+ list.appendChild(summary);
+ const priority={PENDENTE:0,ACEITO:1,CRIADOR_JOGANDO:2};
+ const time=ch=>Date.parse(ch.created)||0;
+ open.sort((a,b)=>(priority[a.status]??3)-(priority[b.status]??3)||time(b)-time(a));
+ finished.sort((a,b)=>time(b)-time(a));archived.sort((a,b)=>time(b)-time(a));
+ function card(ch){
+  const mine=ch.creator.id===id,opponent=mine?ch.recipient:ch.creator;
+  const item=document.createElement('article');item.className='cm-challenge';
+  if(statusOf(ch)==='CONCLUIDO'){
+   const own=score(ch,mine),other=otherScore(ch,mine);
+   item.classList.add(own>other?'cm-duel-win':own<other?'cm-duel-loss':'cm-duel-draw');
+  }else if(archived.includes(ch)){item.classList.add('cm-duel-declined')}
+  else{item.classList.add('cm-duel-open')}
+  if(cmAlertable(ch,id)&&cmNoticeSnapshot[ch.id]!==cmNotificationState(ch))item.classList.add('cm-challenge-new');
+  const title=document.createElement('strong');title.textContent=(mine?'📤 Você desafiou ':'🔔 Você foi desafiado por ')+(opponent?.name||'Colega');
+  const type={mesma_turma:'Mesma turma',entre_equipes:'Entre equipes',interclasses:'Interclasses'}[ch.kind]||ch.kind;
+  const statusLabel={CRIADOR_JOGANDO:mine?'Termine suas 5 flechas':'O desafiante ainda está jogando',PENDENTE:'Aguardando aceite',ACEITO:'Desafio aceito',RECUSADO:'Recusado',RECUSADA:'Recusado',REJEITADO:'Recusado',DECLINED:'Recusado',CONCLUIDO:'Concluído'}[statusOf(ch)]||'Estado indisponível';
+  const sub=document.createElement('small');sub.textContent=type+' · '+statusLabel+' · '+new Date(ch.created).toLocaleDateString('pt-BR');
+  item.append(title,sub);
+  if(statusOf(ch)==='CONCLUIDO'){
+   const own=score(ch,mine),other=otherScore(ch,mine);
+   const result=document.createElement('p');result.className='cm-duel-result';
+   result.textContent=(own>other?'🏆 VITÓRIA':own<other?'⚔️ DERROTA':'🤝 EMPATE')+' · '+own+' × '+other+' pontos';
+   item.appendChild(result);
+  }else{
+   const desc=document.createElement('p');
+   const status=statusOf(ch);
+   desc.textContent=archived.includes(ch)?'Convite recusado e encerrado.':
+     status==='CRIADOR_JOGANDO'&&mine?'Faça suas cinco flechas para enviar o convite.':
+     status==='CRIADOR_JOGANDO'?'O desafiante ainda precisa terminar as cinco flechas. Você não precisa agir agora.':
+     status==='PENDENTE'&&mine?'Seu colega já pode aceitar o desafio.':
+     status==='PENDENTE'?'Você recebeu um convite. Aceite ou recuse.':
+     status==='ACEITO'&&mine?'Aguardando a rodada do colega.':
+     status==='ACEITO'?'Sua rodada está disponível.':'Status não reconhecido. Consulte novamente mais tarde.';
+   item.appendChild(desc);
+  }
+  const actions=document.createElement('div');actions.className='cm-challenge-actions';
+  function action(label,kind,reject=false){
+   const button=document.createElement('button');button.type='button';button.className='cm-challenge-btn'+(reject?' reject':'');
+   button.textContent=label;button.dataset.id=ch.id;button.dataset.action=kind;actions.appendChild(button);
+  }
+  if(!mine&&statusOf(ch)==='PENDENTE'){action('✅ ACEITAR','accept');action('❌ RECUSAR','decline',true)}
+  else if(!mine&&statusOf(ch)==='ACEITO')action('🏹 JOGAR MINHAS 5 FLECHAS','play');
+  else if(mine&&statusOf(ch)==='CRIADOR_JOGANDO')action('🏹 RETOMAR MINHA RODADA','play');
+  if(actions.childElementCount)item.appendChild(actions);
+  return item;
+ }
+ function heading(text,count){
+  const h=document.createElement('h3');h.className='cm-inbox-group';h.textContent=text+' ('+count+')';return h;
+ }
+ const openSection=document.createElement('section');openSection.className='cm-inbox-section';
+ openSection.appendChild(heading('⚔️ DESAFIOS EM ABERTO',open.length));
+ if(!open.length){const note=document.createElement('p');note.className='cm-inbox-empty';note.textContent='Nenhum desafio em aberto.';openSection.appendChild(note)}
+ for(const [label,predicate] of [
+  ['🔔 Recebidos',ch=>ch.recipient?.id===id],
+  ['🏹 Propostos',ch=>ch.creator?.id===id]]){
+  const items=open.filter(predicate);
+  openSection.appendChild(heading(label,items.length));
+  for(const ch of items)openSection.appendChild(card(ch));
+ }
+ list.appendChild(openSection);
+ const history=document.createElement('details');history.className='cm-duel-history';
+ const historyTitle=document.createElement('summary');historyTitle.textContent='📜 HISTÓRICO — '+finished.length+' concluídos · '+archived.length+' recusados';
+ history.appendChild(historyTitle);
+ for(const [label,items] of [['✅ Duelos concluídos',finished],['🚫 Desafios recusados — encerrados',archived],['⚠️ Outros estados — não contabilizados como abertos',other]]){
+  history.appendChild(heading(label,items.length));
+  for(const ch of items)history.appendChild(card(ch));
+ }
+ list.appendChild(history);
+}
+const CM_NOTICES_PREFIX='cm-duel-notices-v2-isolated-';
+let cmNoticePlayer='',cmNoticeSnapshot={};
+function cmNoticeKey(id){return CM_NOTICES_PREFIX+id}
+function cmAlertable(ch,id){
+ const incoming=ch.recipient?.id===id,own=ch.creator?.id===id;
+ return (incoming&&['PENDENTE','ACEITO','CONCLUIDO'].includes(ch.status))||
+        (own&&['ACEITO','RECUSADO','CONCLUIDO'].includes(ch.status));
+}
+function cmNotificationState(ch){
+ return [ch.status,ch.creatorScore??'-',ch.recipientScore??'-'].join(':');
+}
+function cmLoadNoticeSnapshot(id){
+ try{return JSON.parse(localStorage.getItem(cmNoticeKey(id))||'{}')||{}}catch{return {}}
+}
+function cmSaveNoticeSnapshot(id){
+ try{localStorage.setItem(cmNoticeKey(id),JSON.stringify(cmNoticeSnapshot))}catch{}
+}
+function cmUpdateBell(){
+ const id=online.user?.id,btn=$('open-inbox'),num=$('unread-count'),quick=$('cm-open-challenges'),quickCount=$('cm-quick-challenges-count');
+ if(!btn||!num)return;
+ if(!id){
+  num.textContent='—';if(quickCount)quickCount.textContent='—';
+  btn.classList.remove('cm-bell-alert');if(quick)quick.classList.remove('cm-bell-alert');
+  btn.title='Selecione seu perfil para consultar os desafios';return;
+ }
+ // The main number is the number of actual challenges, not unread notifications.
+ const rows=onlineInbox.filter(c=>c?.id&&((c.creator?.id===id&&c.recipient?.id!==id)||(c.recipient?.id===id&&c.creator?.id!==id)));
+ const received=rows.filter(c=>c.recipient?.id===id).length;
+ const sent=rows.length-received;
+ const updates=rows.filter(ch=>cmAlertable(ch,id)&&cmNoticeSnapshot[ch.id]!==cmNotificationState(ch));
+ num.textContent=String(rows.length);
+ if(quickCount)quickCount.textContent=String(rows.length);
+ const description=rows.length+' desafios: '+received+' recebidos, '+sent+' enviados; '+updates.length+' novidade(s) não vistas.';
+ btn.title=description;btn.setAttribute('aria-label','Meus desafios. '+description);
+ btn.classList.toggle('cm-bell-alert',updates.length>0);
+ if(quick){quick.title=description;quick.classList.toggle('cm-bell-alert',updates.length>0)}
+}
+function cmMarkNoticesRead(){
+ const id=online.user?.id;if(!id)return;
+ for(const ch of onlineInbox){if(cmAlertable(ch,id))cmNoticeSnapshot[ch.id]=cmNotificationState(ch)}
+ cmSaveNoticeSnapshot(id);cmUpdateBell();
+}
+async function refreshInbox(){
+ if(!online.enabled||!online.user){onlineInbox=[];cmNoticePlayer='';cmUpdateBell();return [];}
+ const requestedId=online.user.id;
+ const counter=$('unread-count');
+ if(counter&&cmNoticePlayer!==requestedId)counter.textContent='…';
+ let rows;
+ try{rows=await online.inbox()}catch(error){
+  if(online.user?.id===requestedId){const count=$('unread-count');if(count)count.textContent='!';const q=$('cm-quick-challenges-count');if(q)q.textContent='!'}
+  throw error;
+ }
+ // Ignore delayed results if the student changed profiles while the request ran.
+ if(online.user?.id!==requestedId)return [];
+ onlineInbox=rows;
+ if(cmNoticePlayer!==requestedId){cmNoticePlayer=requestedId;cmNoticeSnapshot=cmLoadNoticeSnapshot(requestedId)}
+ cmUpdateBell();renderInbox();return onlineInbox;
+}
+async function openInbox(){
+ /* API direta: caixa de desafios usa o servidor HTTP. */
+ if(!online.user){const selected=await loginStudent();if(!selected){toast('Escolha seu nome para abrir seus desafios.');return;}}
+ $('online-inbox').classList.remove('hidden');
+ $('inbox-status').textContent='⏳ Consultando convites recebidos...';
+ try{await refreshInbox();cmMarkNoticesRead()}catch(e){$('inbox-status').textContent='⚠️ Falha ao carregar desafios: '+e.message}
+}
+
+// Acesso direto à caixa de desafios a partir da tela inicial.
+// A identificação é necessária, mas a escolha de arqueiro/equipamento NÃO é.
+let cmInboxShortcutPending=false;
+async function cmOpenChallengeInboxShortcut(){
+ const candidate=[identifiedPlayerId,cmStoredLobbyStudent(),cmSessionId(),online.user?.id]
+  .find(id=>/^[ABC][0-9]{2}$/.test(id||'')&&choices(id[0]).some(p=>p.id===id));
+ if(!candidate){
+  cmInboxShortcutPending=true;
+  document.body.classList.remove('cm-v2-home-mode');
+  document.body.classList.add('cm-v2-onboarding');
+  setLobbyStep('reino');
+  toast('Selecione sua casa e seu nome para consultar Meus desafios.');
+  return;
+ }
+ cmInboxShortcutPending=false;
+ if(identifiedPlayerId&&identifiedPlayerId!==candidate){
+  toast('Encerre a sessão anterior antes de trocar de aluno.');return;
+ }
+ identifiedPlayerId=candidate;
+ if(cmSessionId()!==candidate)cmSaveStudent(candidate);
+ selectHouse(candidate[0]);fillPlayer(candidate);
+ $('player').value=candidate;$('player').disabled=true;
+ try{await openInbox()}catch(error){toast('Não foi possível consultar desafios: '+error.message)}
+}
+window.classmanaOpenChallengeInboxShortcut=cmOpenChallengeInboxShortcut;
+
+async function onInboxAction(e){
+ const button=e.target.closest('button[data-action]');if(!button||onlineLoading)return;
+ const ch=onlineInbox.find(x=>x.id===button.dataset.id);if(!ch)return;
+ button.disabled=true;
+ try{
+  if(button.dataset.action==='accept'){
+   const saved=await online.answer(ch.id,'accept');$('online-inbox').classList.add('hidden');
+   toast('✅ Desafio aceito! Veja os disparos do adversário e faça sua rodada.');await startMatch(saved);
+  }else if(button.dataset.action==='decline'){
+   await online.answer(ch.id,'decline');toast('Desafio recusado.');await refreshInbox();
+  }else if(button.dataset.action==='play'){
+   $('online-inbox').classList.add('hidden');await startMatch(ch);
+  }
+ }catch(error){toast('⚠️ '+error.message);button.disabled=false;}
+}
+async function startOnlineClient(){
+ online.lastError=null;
+ showOnlineStatus();
+ if(!online.enabled)return;
+ try{
+  const connected=await online.connect();online.lastError=null;showOnlineStatus();
+  if(!connected)return;
+  try{cmSyncRoster(await online.list(),{complete:true})}catch(err){console.warn('Lista online indisponível; usando nomes cadastrados no jogo:',err)}
+  // A sessão permanece durante a navegação, mas desafios online ainda exigem
+  // validação pelo servidor antes da criação dos convites.
+  const sessionId=cmResumeSameStudent?cmSessionId():'';
+  // Initial identity is already cleared synchronously at module start.
+  // Never force the lobby back to Casa after a student has begun choosing a character.
+  if(document.body.dataset.page==='lobby'&&/^[ABC][0-9]{2}$/.test(sessionId)&&(!online.user||online.user.id===sessionId)){
+   if(!online.user){try{await online.login(sessionId)}catch(err){console.warn('Não foi possível reconectar o aluno:',err);cmForgetStudent();return;}}
+   identifiedPlayerId=sessionId;
+   if(gearProgress.playerId!==sessionId)loadPlayerEquipment(sessionId);
+   else void syncEquipmentProgress(sessionId);
+   selectHouse(sessionId[0]);fillPlayer(sessionId);populateIdentityOptions();
+   $('player').value=sessionId;$('player').disabled=true;updateMode();
+   // A reconexão não deve retirar o aluno da tela que acabou de abrir.
+   if(['reino','perfil'].includes($('view-inicio')?.dataset.step))setLobbyStep('desafio');
+   const endBtn=$('cm-end-session');if(endBtn)endBtn.hidden=false;
+  }else if(document.body.dataset.page==='lobby'&&!identifiedPlayerId&&online.user&&sessionId!==online.user.id){
+   online.logout();cmForgetStudent();identifiedPlayerId='';
+  }
+  if(document.body.dataset.page!=='lobby'&&!online.user){
+   const remembered=localStorage.getItem('cm_arco_nome_v2');
+   if(/^[ABC][0-9]{2}$/.test(remembered||'')){selectHouse(remembered[0]);$('player').value=remembered;await loginStudent();}
+  }
+  try{
+   const pendentes=await refreshInbox();
+   if(online.user&&pendentes.some(c=>c.recipient.id===online.user.id&&c.status==='PENDENTE')){
+    toast('🔔 Você foi desafiado! Abra Meus desafios quando quiser responder.');
+   }
+  }catch(error){console.warn('Convites temporariamente indisponíveis:',error)}
+  // Não abrir o painel por reconexão nem por parâmetros da URL.
+  renderRanking();
+ }catch(error){
+  online.state='error';
+  online.lastError=String(error?.message||'Falha de conexão');
+  showOnlineStatus();
+  $('online-status').title=online.lastError;
+  console.warn('ClassMana API:',error);
+ }
+}
+
+// Interações do jogo.
+document.querySelectorAll('.nav-link').forEach(el=>el.addEventListener('click',()=>{if(el.dataset.view==='inicio'&&view==='inicio')setLobbyStep('reino');else openView(el.dataset.view)}));
+document.querySelectorAll('[data-lobby-step]').forEach(button=>button.addEventListener('click',()=>{if(document.body.dataset.page==='lobby'&&!identifiedPlayerId){setLobbyStep('reino');return}setLobbyStep(button.dataset.lobbyStep)}));
+function populateIdentityOptions(){
+ const el=$('cm-identity-player');if(!el)return;
+ const names=choices(house);
+ el.innerHTML='<option value="">Selecione seu nome — 4º '+house+'</option>'+names.map(p=>
+  '<option value="'+p.id+'">'+p.name+' · '+p.id+'</option>').join('');
+ el.value=identifiedPlayerId?.[0]===house?identifiedPlayerId:'';
+ const info=$('cm-identity-info');
+ if(info)info.textContent='Turma: 4º '+house+' — '+H[house].name+' · '+names.length+' alunos';
+ const label=document.querySelector('label[for="cm-identity-player"]');
+ if(label)label.textContent='ALUNOS DO 4º '+house+' — '+H[house].name.toUpperCase();
+}
+// Mantém a lista local sincronizada com os alunos extras do SQLite V2.
+// As IDs geradas pelo professor são sequenciais: a posição no array permanece estável.
+function cmSyncRoster(students,{complete=false}={}){
+ if(!Array.isArray(students))return;
+ let changed=false;
+ const activeIds=new Set(students.map(p=>p?.id).filter(id=>/^[ABC][0-9]{2}$/.test(id||'')));
+ if(complete){
+  // O banco V2 decide quais IDs estão ativos; nenhuma posição é renumerada.
+  for(const h of ['A','B','C'])for(let i=0;i<R[h].length;i++){
+   const id=h+String(i+1).padStart(2,'0');
+   if(!activeIds.has(id)&&R[h][i]!==null){R[h][i]=null;delete TEAMS[id];changed=true}
+  }
+ }
+ for(const p of students){
+  if(!/^[ABC][0-9]{2}$/.test(p?.id||'')||typeof p.name!=='string')continue;
+  const idx=Number(p.id.slice(1))-1,house=p.id[0];
+  if(idx>=99||idx<0)continue;
+  if(R[house][idx]!==p.name){R[house][idx]=p.name;changed=true;}
+  if(typeof p.team==='string'){
+    if(p.team)TEAMS[p.id]=p.team;
+    else delete TEAMS[p.id];
+  }
+ }
+ if(changed && document.body.dataset.page==='lobby'){
+  fillPlayer($('player')?.value);populateIdentityOptions();
+  window.dispatchEvent(new Event('classmana:v2-lobby-session-changed'));
+ }
+}
+window.addEventListener('classmana:v2-roster-updated',event=>{
+ const student=event.detail?.student;
+ if(student)cmSyncRoster([student]);
+ if(event.detail?.operation==='delete'){
+  const id=event.detail.id,houseId=id?.[0],idx=Number(id?.slice(1))-1;
+  if(['A','B','C'].includes(houseId)&&Number.isInteger(idx)&&idx>=0&&idx<99){
+   R[houseId][idx]=null;delete TEAMS[id];
+   if(id===identifiedPlayerId){online.logout();cmForgetStudent();identifiedPlayerId='';}
+   if(document.body.dataset.page==='lobby'){fillPlayer();populateIdentityOptions();fillRivals();}
+  }
+ }
+});
+populateIdentityOptions();
+$('cm-identity-player')?.addEventListener('change',event=>{
+ const id=event.currentTarget.value,found=choices(house).find(p=>p.id===id);
+ const info=$('cm-identity-info');
+ if(info)info.textContent=found?'✓ '+found.name+' · 4º '+house+' — '+H[house].name:'Selecione seu nome no 4º '+house+'.';
+});
+$('cm-confirm-identity')?.addEventListener('click',()=>{
+ const id=$('cm-identity-player')?.value||'';
+ if(!/^[ABC][0-9]{2}$/.test(id)||id[0]!==house){toast('Escolha seu nome no 4º '+house+'.');$('cm-identity-player')?.focus();return;}
+ if((identifiedPlayerId&&identifiedPlayerId!==id)||(cmStoredLobbyStudent()&&cmStoredLobbyStudent()!==id)){
+  toast('Há outra sessão neste computador. Encerre-a no menu antes de trocar de aluno.');return;
+ }
+ identifiedPlayerId=id;cmSaveStudent(id);cmShowActiveSession();
+ loadPlayerEquipment(id);
+ $('player').value=id;fillPlayer(id);fillRivals();
+ $('player').disabled=true;
+ if(cmInboxShortcutPending){
+  void cmOpenChallengeInboxShortcut();
+ }else{
+  setLobbyStep('heroi');
+ }
+});
+
+$('confirm-archer').addEventListener('click',()=>{
+ // Salvar a escolha de avatar por estudante, nao apenas por casa.
+ const cmAvatarStudent=$('player')?.value||identifiedPlayerId;
+ if(/^[ABC][0-9]{2}$/.test(cmAvatarStudent||'')){
+  try{const cmMap=JSON.parse(localStorage.getItem('classmana-student-archer-genders-v2')||'{}')||{};cmMap[cmAvatarStudent]=archerGender();localStorage.setItem('classmana-student-archer-genders-v2',JSON.stringify(cmMap))}catch{}
+ }
+ if(equipment.bow!=='classico'&&(!gearProgress.confirmed||!isGearUnlocked(equipment.bow,gearProgress.wins))){toast('Arma ainda bloqueada; escolha um equipamento liberado.');return}
+ setLobbyStep('desafio');
+});
+$('challenge-level').addEventListener('change',drawCourse);
+document.querySelectorAll('.house').forEach(el=>el.addEventListener('click',()=>{
+ const chosen=el.dataset.house;
+ if(identifiedPlayerId&&identifiedPlayerId[0]!==chosen){toast('Encerre a sessão antes de trocar de Casa.');return;}
+ selectHouse(chosen);
+ populateIdentityOptions();
+ setLobbyStep('perfil');
+}));
+function rotateArcher(){chooseArcher(archerGender()==='m'?'f':'m')}
+$('archer-prev').addEventListener('click',rotateArcher);
+$('archer-next').addEventListener('click',rotateArcher);
+document.querySelector('.studio-carousel')?.addEventListener('keydown',event=>{
+ if(event.key==='ArrowLeft'||event.key==='ArrowRight'){
+  event.preventDefault();rotateArcher();
+  $(event.key==='ArrowLeft'?'archer-prev':'archer-next').focus();
+ }
+});
+cinematics.mountAmbient($('view-inicio'),house,72);
+cinematics.mountAmbient($('cm-v2-home'),house,155);
+cinematics.mountAmbient($('stage'),house,52);
+cinematics.bindMenuSound(effect=>arenaAudio.play(effect));
+const soundButton=$('arena-sound');
+function updateSoundButton(){
+ if(!soundButton)return;
+ const on=arenaAudio.enabled;
+ soundButton.textContent=on?'🔊 Som ligado':'🔇 Som desligado';
+ soundButton.setAttribute('aria-pressed',String(on));
+ soundButton.setAttribute('aria-label',on?'Desativar sons da arena':'Ativar sons da arena');
+}
+function updateLobbyAudioButton(){
+ const button=$('cm-lobby-sound');if(!button)return;
+ button.textContent=arenaAudio.enabled?'🔊':'🔇';
+ button.setAttribute('aria-pressed',String(arenaAudio.enabled));
+ button.setAttribute('aria-label',!arenaAudio.enabled?'Ativar música e efeitos':arenaAudio.playing?'Desativar música e efeitos':'Música ativada, toque para iniciar reprodução');
+}
+function audioControl(){
+ // O botão sempre liga/desliga. Antes, o primeiro toque podia apenas iniciar
+ // a reprodução, mantendo o ícone ligado e parecendo não funcionar.
+ arenaAudio.toggle();
+ updateSoundButton();updateLobbyAudioButton();
+}
+soundButton?.addEventListener('click',audioControl);
+$('cm-lobby-sound')?.addEventListener('click',audioControl);
+document.addEventListener('pointerdown',()=>queueMicrotask(updateLobbyAudioButton),{passive:true});
+updateSoundButton();updateLobbyAudioButton();
+// Seleção de equipamentos controlada pelas setas do carrossel dourado.
+applyEquipment();
+$('mode').addEventListener('change',updateMode);
+$('player').addEventListener('change',()=>{
+ if(identifiedPlayerId&&$('player').value!==identifiedPlayerId){$('player').value=identifiedPlayerId;toast('Para trocar de aluno, encerre a sessão.');return;}
+ const quick=$('cm-quick-player');if(quick)quick.value=$('player').value==='guest'?'':$('player').value;
+ fillRivals();if(online.state==='ready'&&$('player').value!=='guest')loginStudent().catch(console.warn);
+});
+
+$('team-scope').addEventListener('change',updateMode);
+$('opponent-house').addEventListener('change',fillRivals);
+$('opponent-team').addEventListener('change',fillRivals);
+$('my-team').addEventListener('change',()=>{
+ const mate=choices(house).find(p=>TEAMS[p.id]===$('my-team').value);
+ if(mate&&identifiedPlayerId&&mate.id!==identifiedPlayerId){toast('Sua equipe está vinculada ao jogador da sessão.');$('my-team').value=TEAMS[identifiedPlayerId]||'';return;}
+ if(mate){$('player').value=mate.id;if(online.state==='ready')loginStudent().catch(console.warn)}
+ fillRivals();
+});$('start-game').addEventListener('click',startMatch);$('rank-play').addEventListener('click',()=>openView('inicio'));$('rules-play').addEventListener('click',()=>openView('inicio'));$('leave-arena').addEventListener('click',()=>{
+ if(match?.running&&!confirm('Abandonar a rodada atual e voltar aos desafios?'))return;
+ cmReturnToChallenge();
+});$('play-again').addEventListener('click',cmReplayCurrentMatch);$('cm-v2-result-home')?.addEventListener('click',cmReturnToChallenge);$('share-result').addEventListener('click',()=>{if(match?.onlineSaveFailed)finishMatch();else if(!match?.online)share()});
+const world=$('world');world.addEventListener('pointerdown',e=>{if(!match?.running||match.locked||match.paused)return;e.preventDefault();world.setPointerCapture(e.pointerId);holding=true;pointerStart=Date.now();aim(e);scene?.setPower(.28);$('stage').classList.add('aiming');arenaAudio.play('draw');$('instruction').textContent='ARRASTE PARA MOVER O ARCO • SOLTE PARA ATIRAR'});world.addEventListener('pointermove',e=>{if(!match?.running||match.locked||match.paused)return;if(holding||e.pointerType==='mouse')aim(e);if(holding)scene?.setPower(chargePower())});world.addEventListener('pointerup',e=>{if(!holding)return;e.preventDefault();aim(e);holding=false;$('stage').classList.remove('aiming');$('instruction').textContent='MOVA OU ARRASTE PARA MIRAR • SEGURE PARA PUXAR • SOLTE PARA ATIRAR';const p=chargePower();scene?.setPower(p);spriteHud?.setPower(p);fire(p);uiHud()});world.addEventListener('pointercancel',()=>{holding=false;$('stage').classList.remove('aiming');scene?.setPower(0)});
+document.addEventListener('keydown',e=>{if(view!=='arena'||!match?.running||match.locked)return;let action=true;const step=e.shiftKey?.022:.008;switch(e.code){case'ArrowUp':reticle.y=clamp(reticle.y-step,.08,.92);break;case'ArrowDown':reticle.y=clamp(reticle.y+step,.08,.92);break;case'ArrowLeft':reticle.x=clamp(reticle.x-step,.06,.94);break;case'ArrowRight':reticle.x=clamp(reticle.x+step,.06,.94);break;case'Space':fire(1);break;default:action=false}if(action){e.preventDefault();updateReticle()}});
+setInterval(()=>{if(holding&&!match?.paused){scene?.setPower(chargePower());uiHud()}},60);
+
+$('retry-online')?.addEventListener('click',async()=>{
+ 
+ const button=$('retry-online');button.disabled=true;
+ try{await startOnlineClient()}
+ finally{button.disabled=false}
+});
+$('open-inbox').addEventListener('click',openInbox);
+$('close-inbox').addEventListener('click',()=>$('online-inbox').classList.add('hidden'));
+$('online-inbox').addEventListener('click',e=>{if(e.target===$('online-inbox'))$('online-inbox').classList.add('hidden')});
+$('inbox-list').addEventListener('click',onInboxAction);
+function cmEndSession(){
+ if(match?.running){toast('Finalize ou abandone a partida antes de encerrar a sessão.');return}
+ const id=identifiedPlayerId||cmStoredLobbyStudent()||cmSessionId()||online.user?.id||'';
+ if(!id)return;
+ const person=choices(id[0]).find(p=>p.id===id);
+ if(!confirm('Encerrar a sessão de '+(person?.name||online.user?.name||'jogador atual')+'?'))return;
+ online.logout();cmForgetStudent();cmClearLobbyStudent();identifiedPlayerId='';onlineInbox=[];cmNoticePlayer='';
+ $('player').disabled=false;$('player').value='guest';cmShowActiveSession();
+ if($('cm-identity-player'))$('cm-identity-player').value='';
+ fillRivals();cmUpdateBell();showOnlineStatus();
+ const endBtn=$('cm-end-session');if(endBtn)endBtn.hidden=true;
+ setLobbyStep('reino');
+ if(cmIsLobby){document.body.classList.add('cm-v2-home-mode');document.body.classList.remove('cm-v2-onboarding')}
+ toast('Sessão encerrada. Próximo aluno pode jogar.');
+}
+$('logout').addEventListener('click',cmEndSession);
+$('cm-end-session')?.addEventListener('click',cmEndSession);
+$('cm-previous-session-exit')?.addEventListener('click',cmEndSession);
+$('cm-v2-home-exit')?.addEventListener('click',cmEndSession);
+$('cm-ranking-choice')?.addEventListener('click',()=>openView('ranking'));
+$('cm-open-challenges')?.addEventListener('click',()=>openInbox());
+document.querySelectorAll('[data-rank]').forEach(btn=>btn.addEventListener('click',()=>{
+ scoreTab=btn.dataset.rank==='classes'?'classes':'players';cmRankMode();renderRanking();
+}));
+function toggleArenaPause(){
+ if(!match?.running||match.locked||view!=='arena')return;
+ const now=performance.now();
+ if(!match.paused){match.freezeTime=stageSeconds();match.pauseSince=now;match.paused=true;}
+ else{match.stageStartedAt+=now-(match.pauseSince||now);match.freezeTime=null;match.paused=false;}
+ spriteHud?.setPaused(match.paused);arenaAudio.setActive(!match.paused);
+}
+spriteHud=mountSpriteHUD({
+ onPowerStart:()=>{if(!match?.running||match.locked||match.paused||view!=='arena')return false;
+   $('stage').classList.add('aiming');arenaAudio.play('draw');return true;},
+ onPowerMove:p=>{if(match?.running&&!match.paused)scene?.setPower(p);},
+ onPowerRelease:p=>{if(!match?.running||match.locked||match.paused)return;
+  $('stage').classList.remove('aiming');scene?.setPower(p);fire(p);uiHud();},
+ onPause:toggleArenaPause
+});
+// No retorno de JOGAR NOVAMENTE, a etapa é aberta diretamente.
+ // O backend ainda valida a sessão do mesmo aluno, sem reiniciar a jornada visual.
+ const cmDirectChallengeReturn=cmIsLobby&&cmResumeSameStudent&&
+  new URLSearchParams(location.search).get('continuar')==='1'&&
+  /^[ABC][0-9]{2}$/.test(cmSessionId());
+ selectHouse(cmResumeSameStudent&&/^[ABC][0-9]{2}$/.test(cmSessionId())?cmSessionId()[0]:'A');
+ updateMode();drawCourse();setLobbyStep(cmDirectChallengeReturn?'desafio':'reino');
+const hostedParams=new URLSearchParams(location.search);
+if(hostedParams.get('hosted')==='1'&&document.body.dataset.page!=='arena'){
+ const hostHouse=hostedParams.get('house'),hostMode=hostedParams.get('mode'),hostPlayer=hostedParams.get('player');
+ if(['A','B','C'].includes(hostHouse))selectHouse(hostHouse);
+ if(['challenge_same','challenge_team','challenge'].includes(hostMode)){$('mode').value=hostMode;updateMode()}
+ if(/^[ABC]\d{2}$/.test(hostPlayer||'')&&hostPlayer[0]===house){$('player').value=hostPlayer;fillRivals()}
+ setLobbyStep('partida');
+}
+// A seleção de jogador sempre pode voltar à escolha da Casa.
+$('cm-identity-back')?.addEventListener('click',()=>setLobbyStep('reino'));
+// A abertura duplicada foi removida. O fluxo começa na escolha da Casa.
+$('cm-lobby-back')?.addEventListener('click',()=>{
+ const step=$('view-inicio')?.dataset.step;
+ setLobbyStep(step==='partida'?'desafio':step==='desafio'?'heroi':step==='heroi'?'perfil':'reino');
+});
+document.querySelectorAll('[data-play-mode]').forEach(button=>{
+ button.addEventListener('click',()=>{
+  const chosen=button.dataset.playMode;
+  if(!['practice','bot','challenge_same','challenge_team','challenge'].includes(chosen))return;
+  if(isDuel(chosen)&&!(/^[ABC][0-9]{2}$/.test($('player').value))){
+    setLobbyStep('perfil');populateIdentityOptions();$('cm-identity-player')?.focus();
+    toast('🏹 Escolha seu nome antes de iniciar o duelo.');return;
+  }
+  // Treino contra o robô: o nível escolhido segue diretamente para a carta VS.
+  // Não alterar startMatch(), match.difficulty, a trilha ou o cálculo dos cinco disparos.
+  if(chosen==='bot'&&['easy','medium','hard'].includes(button.dataset.botDifficulty||'')){
+   const difficulty=button.dataset.botDifficulty;
+   $('difficulty').value=difficulty;
+   $('challenge-level').value=BOT_LEVEL_BY_DIFFICULTY[difficulty];
+   $('mode').value='bot';
+   updateMode();
+   drawCourse();
+   void startMatch();
+   return;
+  }
+  $('mode').value=chosen;updateMode();
+  setLobbyStep('partida');
+ });
+});
+function restoreArena(){
+ if(document.body.dataset.page!=='arena')return;
+ let saved=null;
+ try{saved=JSON.parse(sessionStorage.getItem('cm_active_archery_match_v2')||'null')}catch{}
+ if(!saved||!['A','B','C'].includes(saved.house)||!Array.isArray(saved.scores)||saved.scores.length>5){
+  const student=cmSessionId();
+  if(/^[ABC][0-9]{2}$/.test(student)){cmMarkInternalReturn();window.location.replace('./?continuar=1');}
+  else window.location.replace('./');
+  return;
+ }
+ match=saved;
+ // Sessões de treino sem disparos devem recuperar a trilha da dificuldade escolhida.
+ if(match.mode==='bot'&&match.scores.length===0)match.level=BOT_LEVEL_BY_DIFFICULTY[match.difficulty]||'iniciante';
+ if(saved.gender==='m'||saved.gender==='f')selectedSkins[saved.house]=saved.gender;
+ identifiedPlayerId=saved.playerId||online.user?.id||cmSessionId();
+ equipment={bow:GEAR_BY_ID[saved.bow]?saved.bow:'classico',arrow:'rubi'};
+ match.stageStartedAt=performance.now();match.freezeTime=null;match.locked=false;
+ match.running=match.scores.length<5||!!match.onlineSaveFailed;
+ selectHouse(match.house);
+ $('player').value=match.playerId||'guest';
+ $('mode').value=match.mode||'practice';
+ $('challenge-level').value=match.level||'iniciante';
+ $('difficulty').value=match.difficulty||'medium';
+ reticle={x:.50,y:.45};
+ $('finish').classList.add('hidden');
+ $('instruction').textContent='MOVA O ARCO PARA MIRAR · SEGURE PARA PUXAR · SOLTE PARA DISPARAR';
+ openView('arena');refreshArcher();ensureScene();changeTarget();updateReticle();uiHud();
+ if(match.scores.length===5)finishMatch();
+}
+if(document.body.dataset.page==='arena')restoreArena();
+else processLink();
+renderRanking();
+// O indicador de transição só desaparece após o restabelecimento da sessão.
+ // Nenhuma etapa intermediária é exibida durante esse processo.
+ startOnlineClient().finally(()=>{
+  document.documentElement.classList.remove('cm-v2-resume-pending');
+ });
+setInterval(async()=>{
+ if(!online.user||online.state!=='ready'||document.visibilityState==='hidden')return;
+ try{
+  const id=online.user.id;
+  const before=onlineInbox.filter(ch=>cmAlertable(ch,id)&&cmNoticeSnapshot[ch.id]!==cmNotificationState(ch)).length;
+  await refreshInbox();
+  const after=onlineInbox.filter(ch=>cmAlertable(ch,id)&&cmNoticeSnapshot[ch.id]!==cmNotificationState(ch)).length;
+  if(after>before)toast('🔔 Novidade no torneio! Abra Meus desafios para ver.');
+ }catch(error){console.warn('Atualização dos convites:',error)}
+},20000);

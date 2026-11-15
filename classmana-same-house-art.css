@@ -1,0 +1,1197 @@
+/* ClassMana V2 — tela ilustrada: desafiar arqueiro da MESMA turma.
+   As artes são arquivos WebP independentes, não desenhos CSS.
+   Demais modalidades e arena permanecem inalteradas. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel {
+  box-sizing:border-box!important;
+  width:min(1190px,96vw)!important;max-width:1190px!important;
+  margin:2px auto 24px!important;padding:0!important;
+  display:flex!important;flex-direction:column!important;gap:7px!important;
+  align-items:center!important;
+  background:none!important;border:0!important;box-shadow:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .online-account {
+  box-sizing:border-box!important;
+  width:100%!important;max-width:1140px!important;min-height:78px!important;
+  display:flex!important;justify-content:space-between!important;align-items:center!important;
+  margin:0 auto!important;padding:0 12px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .online-account > div:first-child {display:none!important}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-plate:not([hidden]){
+  display:block!important;position:relative!important;flex:0 1 410px!important;
+  width:min(410px,46vw)!important;aspect-ratio:850 / 194!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-plate > img{
+  display:block!important;width:100%!important;height:100%!important;object-fit:fill!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-text{
+  position:absolute!important;left:25%!important;right:5%!important;top:14%!important;bottom:12%!important;
+  display:flex!important;flex-direction:column!important;justify-content:center!important;
+  gap:1px!important;text-align:left!important;overflow:hidden!important;
+  text-shadow:0 2px 3px #001126!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-text strong{
+  display:block!important;color:#fff!important;
+  font:900 clamp(12px,1.5vw,19px)/1.15 Nunito,sans-serif!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-text span{
+  display:block!important;color:#f1ecdb!important;
+  font:800 clamp(10px,1.05vw,13px)/1.2 Nunito,sans-serif!important;
+  white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .online-account-actions{
+  display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:wrap!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-house-duel:not([hidden]){
+  box-sizing:border-box!important;position:relative!important;isolation:isolate!important;
+  display:block!important;overflow:visible!important;
+  width:min(1120px,100%)!important;max-width:1120px!important;
+  margin:0 auto!important;padding:26px 23px 12px!important;
+  border:3px solid #d9af57!important;border-radius:22px!important;
+  background:linear-gradient(145deg,rgba(10,48,94,.96),rgba(3,21,51,.97))!important;
+  box-shadow:inset 0 0 0 2px #ffdc8135,0 12px 30px #000a!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-banner{
+  display:block!important;width:min(1020px,98%)!important;height:auto!important;
+  margin:-43px auto 0!important;position:relative!important;z-index:5!important;
+  filter:drop-shadow(0 5px 5px #0009)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-stage{
+  display:grid!important;grid-template-columns:minmax(150px,30%) minmax(0,1fr) minmax(76px,14%)!important;
+  align-items:center!important;gap:4px!important;position:relative!important;
+  width:100%!important;min-height:310px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-hero{
+  position:relative!important;height:308px!important;display:flex!important;
+  align-items:center!important;justify-content:center!important;overflow:visible!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-archer{
+  position:relative!important;display:block!important;
+  max-width:100%!important;width:260px!important;height:285px!important;object-fit:contain!important;
+  filter:drop-shadow(0 8px 12px #000a)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-crest{
+  display:block!important;position:absolute!important;z-index:2!important;
+  width:88px!important;height:88px!important;object-fit:contain!important;
+  left:2%!important;bottom:3px!important;
+  filter:drop-shadow(0 4px 7px #000a)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-center{
+  display:flex!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center!important;gap:5px!important;min-width:0!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-parchment{
+  display:block!important;width:100%!important;max-width:620px!important;
+  height:auto!important;margin:0!important;object-fit:contain!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-choice{
+  position:relative!important;width:min(620px,100%)!important;
+  aspect-ratio:980 / 152!important;margin:-2px auto!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-dropdown-art{
+  display:block!important;position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;object-fit:fill!important;pointer-events:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-select-slot{
+  display:block!important;position:absolute!important;inset:0!important;z-index:3!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-select-slot #rival-label{
+  display:block!important;position:absolute!important;inset:0!important;
+  font-size:0!important;color:transparent!important;text-shadow:none!important;
+  margin:0!important;padding:0!important;background:transparent!important;
+  border:0!important;box-shadow:none!important;outline:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-select-slot #rival{
+  box-sizing:border-box!important;display:block!important;position:absolute!important;
+  top:27%!important;bottom:auto!important;left:23%!important;width:64%!important;height:48%!important;
+  margin:0!important;padding:0 10px!important;min-height:0!important;
+  appearance:none!important;-webkit-appearance:none!important;
+  border:0!important;border-radius:3px!important;outline-offset:2px!important;
+  background:linear-gradient(180deg,#fff4d9,#ffedc9)!important;
+  color:#112a59!important;font:900 clamp(12px,1.5vw,18px) Nunito,sans-serif!important;
+  box-shadow:none!important;text-shadow:none!important;cursor:pointer!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-select-slot #rival-label small{display:none!important}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-medium-art{
+  display:block!important;width:min(315px,72%)!important;height:auto!important;max-height:100px!important;
+  object-fit:contain!important;margin:0 auto!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-bow-art{
+  display:block!important;width:100%!important;max-width:175px!important;
+  max-height:295px!important;height:auto!important;object-fit:contain!important;
+  align-self:center!important;filter:drop-shadow(0 8px 12px #000b)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-accessibility{
+  position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;
+  clip-path:inset(50%)!important;white-space:nowrap!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #start-game{
+  box-sizing:border-box!important;display:block!important;position:relative!important;
+  flex:none!important;width:min(355px,78vw)!important;height:auto!important;
+  margin:-4px auto 12px!important;padding:0!important;
+  background:none!important;border:0!important;box-shadow:none!important;
+  cursor:pointer!important;overflow:visible!important;filter:drop-shadow(0 5px 9px #0007)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #start-game img{
+  content:url("assets/ui/challenge/same-house/botao-iniciar-duelo.webp")!important;
+  display:block!important;width:100%!important;height:auto!important;
+  max-width:none!important;max-height:none!important;object-fit:contain!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #start-game:focus-visible{
+  outline:3px solid #fff!important;outline-offset:5px!important;border-radius:18px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #start-game:hover{
+  transform:scale(1.025)!important;filter:brightness(1.08) drop-shadow(0 6px 10px #000a)!important;
+}
+@media(max-width:800px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-house-duel:not([hidden]){
+   padding:18px 12px 12px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-stage{
+   grid-template-columns:minmax(0,1fr) minmax(0,2fr)!important;gap:2px!important;min-height:0!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-hero{height:245px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-archer{height:230px!important;width:100%!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-crest{width:65px!important;height:65px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-bow-art{display:none!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-plate:not([hidden]){width:min(380px,52vw)!important}
+}
+@media(max-width:560px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel{gap:10px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .online-account{flex-wrap:wrap!important;justify-content:center!important;gap:5px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-plate:not([hidden]){width:min(355px,95%)!important;flex:0 1 355px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-house-duel:not([hidden]){padding:15px 9px 10px!important;border-radius:15px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-banner{width:100%!important;margin:-27px auto 2px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-stage{grid-template-columns:1fr!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-hero{height:125px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-archer{height:120px!important;width:140px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-crest{width:58px!important;height:58px!important;left:20%!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-select-slot #rival{
+   font-size:12px!important;padding:0 2px!important;
+ }
+}
+
+
+/* Ajuste fiel ao mockup aprovado: placa visível, proporções contidas e seletor por clique. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel{
+ width:min(1200px,96vw)!important;gap:0!important;position:relative!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .online-account{
+ min-height:80px!important;position:relative!important;z-index:15!important;
+ padding:0 14px!important;margin:0 auto 26px!important;overflow:visible!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-plate:not([hidden]){
+ width:min(380px,43vw)!important;flex:0 1 380px!important;z-index:16!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-house-duel:not([hidden]){
+ padding:15px 18px 8px!important;margin:16px auto 0!important;min-height:0!important;overflow:visible!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-banner{
+ width:min(850px,85%)!important;margin:-34px auto 6px!important;z-index:4!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-stage{
+ grid-template-columns:minmax(165px,32%) minmax(0,1fr) minmax(95px,15%)!important;
+ min-height:280px!important;gap:0!important;align-items:end!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-hero{
+ height:282px!important;align-self:end!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-archer{
+ width:250px!important;height:275px!important;align-self:end!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-crest{
+ width:126px!important;height:126px!important;left:50%!important;bottom:6px!important;
+ transform:translateX(-50%)!important;z-index:3!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-center{
+ gap:3px!important;align-self:center!important;padding-top:0!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-parchment{
+ width:min(490px,95%)!important;max-width:490px!important;max-height:125px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-choice{
+ width:min(540px,100%)!important;z-index:12!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-select-slot{
+ position:absolute!important;width:1px!important;height:1px!important;
+ overflow:hidden!important;left:-9999px!important;top:auto!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-open-rivals{
+ position:absolute!important;display:block!important;z-index:10!important;
+ inset:0!important;width:100%!important;height:100%!important;cursor:pointer!important;
+ border:0!important;border-radius:18px!important;background:transparent!important;
+ padding:0!important;margin:0!important;box-shadow:none!important;
+ color:#0f2b57!important;font:900 clamp(14px,1.35vw,18px) Nunito,sans-serif!important;
+ text-align:left!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-button-text{
+ position:absolute!important;display:block!important;left:25%!important;right:13%!important;
+ top:33%!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+ pointer-events:none!important;text-align:left!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-open-rivals:not(.has-selection) #cm-same-button-text{
+ visibility:hidden!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-open-rivals.has-selection{
+ background:transparent!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-open-rivals.has-selection #cm-same-button-text{
+ background:#fff0d2!important;padding:0 6px!important;border-radius:4px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-open-rivals:focus-visible{
+ outline:3px solid #f8ec9f!important;outline-offset:2px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-rivals-list[hidden]{
+ display:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-rivals-list:not([hidden]){
+ display:flex!important;flex-direction:column!important;position:absolute!important;
+ z-index:100!important;top:95%!important;left:9%!important;width:82%!important;
+ box-sizing:border-box!important;max-height:250px!important;overflow-y:auto!important;
+ background:#fff3d9!important;border:2px solid #d2a653!important;border-radius:9px!important;
+ box-shadow:0 12px 26px #000a!important;padding:5px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-rival-option{
+ display:block!important;width:100%!important;min-height:37px!important;
+ background:transparent!important;color:#102b55!important;text-align:left!important;
+ padding:7px 10px!important;border:0!important;border-radius:5px!important;
+ font:800 15px Nunito,sans-serif!important;cursor:pointer!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-rival-option:hover,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-rival-option[aria-selected="true"]{
+ background:#bedcf2!important;color:#062242!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-medium-art{
+ width:min(240px,58%)!important;max-height:70px!important;margin:0 auto!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-bow-art{
+ align-self:end!important;max-width:160px!important;max-height:230px!important;
+ transform:translateY(6px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #start-game{
+ width:min(300px,75vw)!important;margin:-12px auto 2px!important;z-index:8!important;
+}
+@media(max-width:800px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-stage{
+  grid-template-columns:minmax(100px,32%) minmax(0,1fr)!important;min-height:240px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-crest{
+  width:80px!important;height:80px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-parchment{
+  max-height:106px!important;
+ }
+}
+@media(max-width:560px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .online-account{margin-bottom:12px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-banner{width:98%!important;margin:-25px auto 6px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-hero{height:130px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-archer{height:128px!important;width:130px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-crest{width:52px!important;height:52px!important;left:70%!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-stage{grid-template-columns:1fr!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-parchment{max-height:115px!important}
+}
+
+
+/* v5 - composição compacta, sem pergaminho; brasão no lugar do arqueiro. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel{
+  gap:0!important;margin-top:-16px!important;margin-bottom:8px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .online-account{
+  min-height:59px!important;height:59px!important;
+  margin:0 auto 0!important;padding:0 8px!important;transform:translateY(-7px)!important;
+  position:relative!important;z-index:20!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-plate:not([hidden]){
+  width:min(314px,35vw)!important;flex:0 1 314px!important;
+  max-height:76px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .online-account-actions{
+  transform:translateY(-7px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-house-duel:not([hidden]){
+  width:min(1050px,100%)!important;padding:12px 14px 2px!important;
+  margin:1px auto 0!important;min-height:0!important;overflow:visible!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-banner{
+  width:min(730px,75%)!important;margin:-31px auto 3px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-stage{
+  grid-template-columns:minmax(150px,32%) minmax(0,1fr) minmax(85px,14%)!important;
+  height:246px!important;min-height:246px!important;align-items:center!important;gap:2px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-hero{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  height:238px!important;min-height:0!important;overflow:visible!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-archer{display:none!important}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-crest{
+  display:block!important;position:static!important;transform:none!important;
+  width:min(225px,86%)!important;height:225px!important;max-height:100%!important;
+  margin:auto!important;object-fit:contain!important;filter:drop-shadow(0 8px 13px #0009)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-parchment{display:none!important}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-center{
+  justify-content:center!important;align-self:center!important;gap:8px!important;
+  padding:0!important;min-height:0!important;overflow:visible!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-choice{
+  width:min(490px,97%)!important;margin:0 auto!important;z-index:15!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-select-slot,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-select-slot #rival-label,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-house-select-slot #rival{
+  display:none!important;visibility:hidden!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-open-rivals{
+  z-index:20!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-open-rivals:not(.has-selection) #cm-same-button-text{
+  display:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-open-rivals.has-selection #cm-same-button-text{
+  font-size:clamp(12px,1.3vw,17px)!important;top:32%!important;left:24%!important;
+  right:13%!important;max-width:62%!important;white-space:nowrap!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-medium-art{
+  width:min(239px,59%)!important;max-height:73px!important;margin:0 auto!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-bow-art{
+  align-self:end!important;width:100%!important;max-width:135px!important;
+  max-height:200px!important;transform:translateY(1px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #start-game{
+  width:min(286px,70vw)!important;margin:-20px auto 0!important;z-index:14!important;
+  max-height:75px!important;
+}
+@media(max-width:800px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .online-account{height:auto!important;min-height:50px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-stage{
+   grid-template-columns:minmax(110px,32%) minmax(0,1fr)!important;
+   min-height:200px!important;height:auto!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-hero{height:210px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-crest{width:min(170px,90%)!important;height:175px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-bow-art{display:none!important}
+}
+@media(max-width:560px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .online-account{height:auto!important;margin-bottom:4px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-plate:not([hidden]){width:min(285px,83vw)!important;flex:0 1 285px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-banner{width:96%!important;margin:-20px auto 5px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-stage{grid-template-columns:1fr!important;min-height:0!important;height:auto!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-hero{height:130px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-crest{width:120px!important;height:124px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-center{gap:2px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #start-game{margin:-4px auto 0!important}
+}
+
+/* Lista aberta: sua área fica livre para leitura e seleção dos nomes. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-same-rivals-open #start-game {
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-house-duel:not([hidden]){
+  z-index:4!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #start-game{
+  z-index:1!important;
+  margin:4px auto 7px!important;
+}
+
+
+/* Modalidade entre turmas — mesmas artes, apenas duas Casas rivais selecionáveis. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-title-wrap{
+ position:relative!important;width:min(730px,75%)!important;margin:-31px auto 3px!important;
+ isolation:isolate!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-title-wrap .cm-same-banner{
+ display:block!important;width:100%!important;height:auto!important;margin:0 auto!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-title:not([hidden]){
+ position:absolute!important;display:flex!important;align-items:center!important;justify-content:center!important;
+ z-index:7!important;left:11%!important;right:11%!important;top:19%!important;bottom:19%!important;
+ padding:0 7px!important;box-sizing:border-box!important;
+ background:linear-gradient(180deg,#133c75 0%,#061a46 33%,#06183b 76%,#14305d 100%)!important;
+ color:#ffdb87!important;text-shadow:0 2px 3px #000e,0 0 5px #985b18!important;
+ font:800 clamp(13px,2.0vw,29px)/1.05 Cinzel,Georgia,serif!important;
+ text-align:center!important;white-space:nowrap!important;letter-spacing:-.022em!important;
+ border-radius:7px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-crest[hidden]{display:none!important}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields:not([hidden]){
+ display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;
+ gap:clamp(5px,1vw,16px)!important;width:100%!important;min-height:205px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-other-house-choice:not([hidden]){
+ appearance:none!important;border:2px solid transparent!important;
+ background:transparent!important;color:#ffe1a2!important;
+ width:min(145px,48%)!important;padding:7px 4px 3px!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;flex-direction:column!important;
+ border-radius:12px!important;cursor:pointer!important;
+ transition:filter .15s ease,opacity .15s ease,background .15s ease!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-other-house-choice[hidden]{display:none!important}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-other-house-choice img{
+ display:block!important;width:100%!important;height:155px!important;object-fit:contain!important;
+ filter:drop-shadow(0 5px 9px #0008)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-other-house-choice span{
+ font:900 14px Nunito,sans-serif!important;text-shadow:0 2px 4px #000e!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-other-house-choice[aria-pressed="true"]{
+ background:linear-gradient(#ffe49d24,#0a2e524f)!important;
+ border-color:#efcb7b!important;box-shadow:0 0 13px #ffcf5480,inset 0 0 0 1px #f5d47a75!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-other-house-choice.cm-other-house-dim{
+ filter:brightness(.35) grayscale(.45)!important;opacity:.62!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-other-house-choice:focus-visible{
+ outline:3px solid #fff1b2!important;outline-offset:3px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-same-open-rivals #cm-same-button-text,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-same-open-rivals:not(.has-selection) #cm-same-button-text{
+ display:flex!important;visibility:visible!important;align-items:center!important;
+ box-sizing:border-box!important;position:absolute!important;left:24%!important;right:13%!important;top:27%!important;
+ height:47%!important;max-width:63%!important;padding:0 6px!important;
+ border-radius:4px!important;background:linear-gradient(#fff4df,#ffefd1)!important;
+ color:#112f5d!important;font:900 clamp(13px,1.35vw,18px) Nunito,sans-serif!important;
+ line-height:1.1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+@media(max-width:800px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields:not([hidden]){
+  min-height:180px!important;gap:3px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-other-house-choice img{
+  height:125px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-title:not([hidden]){
+  font-size:clamp(11px,2.05vw,23px)!important;
+ }
+}
+@media(max-width:560px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-title-wrap{
+  width:96%!important;margin:-20px auto 5px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-title:not([hidden]){
+  font-size:clamp(9px,2.1vw,13px)!important;left:10%!important;right:10%!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields:not([hidden]){
+  min-height:120px!important;gap:3px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-other-house-choice:not([hidden]){
+  width:44%!important;padding:2px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-other-house-choice img{
+  height:95px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-other-house-choice span{font-size:12px!important}
+}
+
+
+/* v9 — painel entre turmas: espaço ampliado à esquerda, apenas dois brasões rivais. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel{
+ width:min(1240px,calc(100vw - 16px))!important;
+ max-width:1240px!important;
+ margin-left:auto!important;margin-right:auto!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-house-duel:not([hidden]){
+ width:min(1210px,100%)!important;max-width:1210px!important;
+ margin-inline:auto!important;box-sizing:border-box!important;
+ padding-left:20px!important;padding-right:20px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-stage{
+ display:grid!important;
+ grid-template-columns:minmax(360px,43%) minmax(0,44%) minmax(86px,13%)!important;
+ column-gap:0!important;justify-content:space-between!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-hero{
+ width:100%!important;height:238px!important;min-width:0!important;
+ flex:initial!important;align-self:center!important;
+ display:flex!important;justify-content:center!important;align-items:center!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-same-house-crest{
+ display:none!important;visibility:hidden!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields:not([hidden]){
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ column-gap:10px!important;align-items:center!important;justify-content:center!important;
+ width:100%!important;max-width:465px!important;height:234px!important;
+ min-height:0!important;margin:0 auto!important;padding:0!important;
+ flex:1 1 100%!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields > .cm-other-house-choice:not([hidden]){
+ box-sizing:border-box!important;display:flex!important;flex-direction:column!important;
+ align-items:center!important;justify-content:center!important;gap:0!important;
+ width:100%!important;min-width:0!important;max-width:none!important;
+ height:232px!important;margin:0!important;padding:5px 4px!important;
+ background:transparent!important;border:2px solid transparent!important;
+ border-radius:13px!important;box-shadow:none!important;
+ cursor:pointer!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields > .cm-other-house-choice[hidden]{
+ display:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields > .cm-other-house-choice img{
+ display:block!important;position:static!important;width:100%!important;
+ max-width:200px!important;min-width:0!important;height:186px!important;
+ max-height:186px!important;object-fit:contain!important;
+ filter:drop-shadow(0 6px 10px #0009)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields > .cm-other-house-choice span{
+ display:block!important;position:static!important;margin:0!important;
+ color:#ffe2a1!important;font:900 16px Nunito,sans-serif!important;
+ text-shadow:0 2px 5px #000b!important;text-align:center!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields > .cm-other-house-choice[aria-pressed="true"]{
+ border-color:#f5c96f!important;
+ background:linear-gradient(165deg,#fff3bd2b,#0e3b6533)!important;
+ box-shadow:0 0 15px #e6c15e91,inset 0 0 0 1px #ffeab47d!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields > .cm-other-house-choice.cm-other-house-dim{
+ filter:brightness(.37) grayscale(.5)!important;opacity:.65!important;
+}
+@media(max-width:1000px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-stage{
+  grid-template-columns:minmax(260px,41%) minmax(0,46%) minmax(70px,13%)!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields > .cm-other-house-choice img{
+  height:153px!important;max-height:153px!important;
+ }
+}
+@media(max-width:700px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-stage{
+  grid-template-columns:minmax(0,1fr)!important;height:auto!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-hero{
+  height:175px!important;min-height:175px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields:not([hidden]){
+  max-width:440px!important;height:172px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields > .cm-other-house-choice:not([hidden]){
+  height:169px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-shields > .cm-other-house-choice img{
+  height:135px!important;max-height:135px!important;
+ }
+}
+
+
+/* Banner interturmas — uma superfície e UMA linha de texto, sem arte com letras embaixo. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-title-wrap{
+ box-sizing:border-box!important;isolation:isolate!important;
+ width:min(750px,92%)!important;height:66px!important;min-height:66px!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ position:relative!important;margin:-31px auto 5px!important;padding:0 27px!important;
+ border:4px solid #e9b84f!important;border-radius:38px!important;
+ background:linear-gradient(180deg,#1a4d8f 0%,#0b2b63 24%,#061b47 58%,#08234c 100%)!important;
+ box-shadow:inset 0 0 0 2px #fff2b5a8,inset 0 -5px 8px #0005,0 6px 14px #0009!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-title-wrap .cm-same-banner{
+ display:none!important;visibility:hidden!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-title:not([hidden]){
+ display:block!important;position:static!important;inset:auto!important;
+ z-index:1!important;box-sizing:border-box!important;margin:0!important;padding:0!important;
+ width:100%!important;height:auto!important;max-width:100%!important;
+ border:0!important;background:transparent!important;border-radius:0!important;
+ color:#ffe1a0!important;text-align:center!important;
+ font:800 clamp(15px,2.08vw,25px)/1.12 Cinzel,Georgia,serif!important;
+ letter-spacing:-.02em!important;white-space:normal!important;
+ text-shadow:0 2px 2px #020c23,0 0 7px #916321!important;
+ overflow:visible!important;
+}
+@media(max-width:700px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-title-wrap{
+  width:96%!important;height:58px!important;min-height:58px!important;
+  margin:-22px auto 6px!important;padding:0 15px!important;border-width:3px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-other-house-title:not([hidden]){
+  font-size:clamp(12px,2.7vw,18px)!important;white-space:normal!important;
+ }
+}
+
+
+/* Entre turmas: cobrir TODO o texto embutido na imagem original do seletor.
+   Preserva o ícone à esquerda e a seta à direita, sem duplicar "Se". */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel #cm-same-open-rivals #cm-same-button-text,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel #cm-same-open-rivals:not(.has-selection) #cm-same-button-text,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel #cm-same-open-rivals.has-selection #cm-same-button-text{
+ display:flex!important;visibility:visible!important;align-items:center!important;
+ position:absolute!important;box-sizing:border-box!important;
+ left:18.1%!important;right:12.4%!important;top:26%!important;
+ width:auto!important;max-width:none!important;height:49%!important;
+ margin:0!important;padding:0 8px!important;
+ background:#fff1d7!important;border-radius:2px!important;
+ font:900 clamp(13px,1.35vw,18px)/1.1 Nunito,sans-serif!important;
+ color:#112f5d!important;white-space:nowrap!important;overflow:hidden!important;
+ text-overflow:ellipsis!important;text-align:left!important;
+ pointer-events:none!important;
+}
+
+
+/* Arte definitiva do seletor V2: a imagem NÃO tem letras gravadas.
+   Texto responsivo é responsabilidade de #cm-same-button-text, para as duas modalidades. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-choice .cm-same-dropdown-art{
+ content:normal!important;display:block!important;width:100%!important;height:100%!important;
+ object-fit:fill!important;pointer-events:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-choice #cm-same-open-rivals #cm-same-button-text,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-choice #cm-same-open-rivals.has-selection #cm-same-button-text,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-choice #cm-same-open-rivals:not(.has-selection) #cm-same-button-text,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-choice #cm-same-open-rivals #cm-same-button-text{
+ display:flex!important;visibility:visible!important;position:absolute!important;
+ box-sizing:border-box!important;
+ left:21%!important;right:12%!important;top:0!important;bottom:0!important;
+ width:auto!important;max-width:none!important;height:100%!important;
+ align-items:center!important;justify-content:flex-start!important;
+ margin:0!important;padding:0 4px!important;
+ border:0!important;outline:0!important;border-radius:0!important;
+ background:transparent!important;box-shadow:none!important;
+ color:#112c57!important;font:900 clamp(12px,1.4vw,18px)/1.2 Nunito,sans-serif!important;
+ white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+ text-align:left!important;pointer-events:none!important;
+}
+@media(max-width:540px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-choice #cm-same-open-rivals #cm-same-button-text{
+  font-size:clamp(10px,3.1vw,14px)!important;left:20%!important;right:12%!important;
+ }
+}
+
+
+/* v13: fundo azul translúcido e Iniciar duelo centralizado sob o painel.
+   Somente a modalidade entre turmas é afetada. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-house-duel:not([hidden]){
+ background:linear-gradient(145deg,rgba(10,47,91,.72),rgba(3,23,54,.75))!important;
+ -webkit-backdrop-filter:blur(2px)!important;
+ backdrop-filter:blur(2px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel #start-game{
+ box-sizing:border-box!important;
+ display:block!important;
+ position:relative!important;
+ inset:auto!important;top:auto!important;left:auto!important;right:auto!important;bottom:auto!important;
+ transform:none!important;
+ float:none!important;clear:both!important;
+ align-self:center!important;
+ width:min(286px,70vw)!important;max-width:286px!important;
+ height:auto!important;min-height:0!important;max-height:none!important;
+ margin:12px auto 20px!important;padding:0!important;
+ z-index:1!important;
+ visibility:visible!important;
+ pointer-events:auto!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel.cm-same-rivals-open #start-game{
+ visibility:hidden!important;pointer-events:none!important;
+}
+@media(max-width:700px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel #start-game{
+  margin:12px auto 18px!important;width:min(286px,76vw)!important;
+ }
+}
+
+
+/* V14 — Composição do desafio entre turmas.
+   Usa arte horizontal própria (1780 x 367) e não altera a tela da mesma turma. */
+body[data-page="lobby"]:has(#view-inicio[data-step="partida"] #setup.cm-interclass-duel) .nav-bar .brand{
+ transform:translateY(17px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel{
+ width:min(1250px,calc(100vw - 20px))!important;max-width:1250px!important;
+ margin:0 auto 24px!important;gap:0!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .online-account{
+ width:100%!important;max-width:1240px!important;
+ margin:0 auto 0!important;padding:0 12px!important;
+ transform:translateY(-5px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-player-plate:not([hidden]){
+ transform:translateX(calc(-1 * min(11vw,180px)))!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-house-duel:not([hidden]){
+ width:100%!important;max-width:1230px!important;
+ margin:clamp(62px,12vh,130px) auto 0!important;
+ padding:18px 18px 10px!important;
+ background:linear-gradient(145deg,rgba(8,43,88,.55),rgba(3,24,57,.59))!important;
+ backdrop-filter:blur(.7px)!important;-webkit-backdrop-filter:blur(.7px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-title-wrap{
+ margin:-35px auto 8px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-stage{
+ grid-template-columns:minmax(295px,43%) minmax(0,44%) minmax(70px,13%)!important;
+ height:290px!important;min-height:290px!important;
+ padding:5px 0!important;box-sizing:border-box!important;align-items:center!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-choice{
+ position:relative!important;box-sizing:border-box!important;
+ width:min(625px,100%)!important;height:auto!important;
+ min-height:0!important;max-height:none!important;
+ aspect-ratio:1780 / 367!important;margin:0 auto!important;overflow:visible!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-choice > .cm-same-dropdown-art{
+ position:absolute!important;inset:0!important;
+ width:100%!important;height:100%!important;max-height:none!important;
+ object-fit:contain!important;object-position:center!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-choice > #cm-same-open-rivals{
+ position:absolute!important;inset:0!important;
+ width:100%!important;height:100%!important;min-height:0!important;
+ border:0!important;box-shadow:none!important;background:transparent!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-choice #cm-same-open-rivals #cm-same-button-text{
+ left:20.5%!important;right:11.5%!important;top:0!important;bottom:0!important;
+ height:100%!important;max-width:none!important;
+ display:flex!important;align-items:center!important;
+ font-size:clamp(13px,1.18vw,18px)!important;
+ background:transparent!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-center{
+ gap:10px!important;padding:0!important;overflow:visible!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-medium-art{
+ margin:0 auto!important;max-height:74px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-bow-art{
+ transform:translateY(14px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #start-game{
+ position:relative!important;inset:auto!important;transform:none!important;
+ display:block!important;width:min(315px,75vw)!important;max-width:315px!important;
+ margin:19px auto 24px!important;z-index:1!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel.cm-same-rivals-open #start-game{
+ visibility:hidden!important;pointer-events:none!important;
+}
+@media(max-height:740px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-house-duel:not([hidden]){
+  margin-top:clamp(25px,7vh,55px)!important;
+ }
+}
+@media(max-width:950px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-player-plate:not([hidden]){
+  transform:translateX(calc(-1 * min(5vw,55px)))!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-stage{
+  grid-template-columns:minmax(210px,42%) minmax(0,46%) minmax(50px,12%)!important;
+  height:250px!important;min-height:250px!important;
+ }
+}
+@media(max-width:700px){
+ body[data-page="lobby"]:has(#view-inicio[data-step="partida"] #setup.cm-interclass-duel) .nav-bar .brand{
+  transform:translateY(5px)!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-player-plate:not([hidden]){
+  transform:none!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-house-duel:not([hidden]){
+  margin:25px auto 0!important;padding:15px 8px 8px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-stage{
+  grid-template-columns:minmax(0,1fr)!important;height:auto!important;min-height:0!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-center{
+  width:100%!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel .cm-same-choice{
+  width:min(550px,100%)!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #start-game{
+  margin:12px auto 20px!important;
+ }
+}
+
+
+/* A mesma arte larga também é usada no modo colega: conservar sua proporção. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-choice{
+ aspect-ratio:1780 / 367!important;height:auto!important;min-height:0!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-choice > .cm-same-dropdown-art{
+ height:100%!important;object-fit:contain!important;
+}
+/* Ganhar de seletores anteriores para todos os estados da seleção interturmas. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-choice #cm-same-open-rivals:not(.has-selection) #cm-same-button-text,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-choice #cm-same-open-rivals.has-selection #cm-same-button-text{
+ left:20.5%!important;right:11.5%!important;top:0!important;bottom:0!important;
+ width:auto!important;height:100%!important;max-width:none!important;
+ margin:0!important;padding:0 4px!important;
+ background:transparent!important;
+ display:flex!important;align-items:center!important;
+}
+
+
+/* V15: o título da outra equipe é um banner independente, 20px acima do painel.
+   Não alteramos a composição da modalidade mesma turma. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-house-duel:not([hidden]){
+ position:relative!important;
+ margin-top:clamp(100px,13vh,150px)!important;
+ overflow:visible!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-title-wrap{
+ position:absolute!important;
+ left:50%!important;right:auto!important;top:-90px!important;bottom:auto!important;
+ transform:translateX(-50%)!important;
+ margin:0!important;
+ width:min(750px,92%)!important;
+ height:66px!important;min-height:66px!important;
+ z-index:8!important;
+}
+/* A distância entre a borda inferior do título e o início do quadro é 24px. */
+@media(max-height:740px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-house-duel:not([hidden]){
+  margin-top:90px!important;
+ }
+}
+@media(max-width:700px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-house-duel:not([hidden]){
+  margin-top:84px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-title-wrap{
+  top:-79px!important;width:min(750px,96%)!important;
+  height:58px!important;min-height:58px!important;
+ }
+}
+
+
+/* V17 — Tela MESMA TURMA. Composição equilibrada como a tela entre turmas.
+   Restrita ao modo challenge_same; não afeta a modalidade entre equipes. */
+body[data-page="lobby"]:has(#view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel)) .nav-bar .brand{
+ transform:translateY(15px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel){
+ width:min(1240px,calc(100vw - 20px))!important;max-width:1240px!important;
+ margin:0 auto 25px!important;gap:0!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .online-account{
+ width:100%!important;max-width:1240px!important;margin:0 auto!important;
+ padding:0 12px!important;transform:translateY(-4px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-player-plate:not([hidden]){
+ transform:translateX(calc(-1 * min(10vw,150px)))!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-house-duel:not([hidden]){
+ position:relative!important;box-sizing:border-box!important;
+ width:100%!important;max-width:1220px!important;
+ margin:clamp(100px,13vh,145px) auto 0!important;
+ padding:16px 18px 10px!important;overflow:visible!important;
+ background:linear-gradient(145deg,rgba(8,43,88,.53),rgba(3,24,57,.58))!important;
+ -webkit-backdrop-filter:blur(.7px)!important;backdrop-filter:blur(.7px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-title-wrap{
+ position:absolute!important;left:50%!important;right:auto!important;
+ top:-90px!important;bottom:auto!important;transform:translateX(-50%)!important;
+ z-index:8!important;margin:0!important;width:min(750px,92%)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-banner{
+ display:block!important;width:100%!important;height:auto!important;max-height:68px!important;
+ object-fit:contain!important;margin:0!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-stage{
+ display:grid!important;grid-template-columns:minmax(250px,39%) minmax(0,46%) minmax(70px,15%)!important;
+ height:295px!important;min-height:295px!important;
+ box-sizing:border-box!important;padding:8px 0!important;
+ align-items:center!important;gap:0!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-hero{
+ display:flex!important;align-items:center!important;justify-content:center!important;
+ height:270px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) #cm-same-house-crest{
+ display:block!important;position:static!important;
+ transform:none!important;margin:auto!important;
+ width:min(235px,90%)!important;height:235px!important;
+ max-height:100%!important;object-fit:contain!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-center{
+ width:100%!important;align-self:center!important;gap:10px!important;
+ padding:0!important;overflow:visible!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-choice{
+ position:relative!important;box-sizing:border-box!important;
+ width:min(625px,100%)!important;aspect-ratio:1780 / 367!important;
+ height:auto!important;min-height:0!important;max-height:none!important;
+ margin:0 auto!important;overflow:visible!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-choice > .cm-same-dropdown-art{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ max-height:none!important;object-fit:contain!important;object-position:center!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) #cm-same-open-rivals{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ background:transparent!important;border:0!important;box-shadow:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-choice #cm-same-open-rivals #cm-same-button-text,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-choice #cm-same-open-rivals.has-selection #cm-same-button-text,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-choice #cm-same-open-rivals:not(.has-selection) #cm-same-button-text{
+ display:flex!important;visibility:visible!important;
+ left:20.5%!important;right:11.5%!important;top:0!important;bottom:0!important;
+ width:auto!important;height:100%!important;max-width:none!important;
+ margin:0!important;padding:0 4px!important;
+ font-size:clamp(12px,1.18vw,18px)!important;align-items:center!important;
+ background:transparent!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-medium-art{
+ margin:0 auto!important;max-height:74px!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-bow-art{
+ transform:translateY(12px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) #start-game{
+ display:block!important;position:relative!important;inset:auto!important;
+ transform:none!important;width:min(315px,75vw)!important;max-width:315px!important;
+ margin:20px auto 24px!important;z-index:1!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel).cm-same-rivals-open #start-game{
+ visibility:hidden!important;pointer-events:none!important;
+}
+@media(max-height:740px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-house-duel:not([hidden]){
+  margin-top:clamp(85px,11vh,100px)!important;
+ }
+}
+@media(max-width:950px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-player-plate:not([hidden]){
+  transform:translateX(calc(-1 * min(5vw,55px)))!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-stage{
+  grid-template-columns:minmax(180px,40%) minmax(0,48%) minmax(50px,12%)!important;
+  height:245px!important;min-height:245px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-hero{height:225px!important}
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) #cm-same-house-crest{height:205px!important}
+}
+@media(max-width:700px){
+ body[data-page="lobby"]:has(#view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel)) .nav-bar .brand{
+  transform:translateY(5px)!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-player-plate:not([hidden]){
+  transform:none!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-house-duel:not([hidden]){
+  margin:85px auto 0!important;padding:14px 8px 8px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-title-wrap{
+  top:-75px!important;width:min(750px,96%)!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-stage{
+  grid-template-columns:minmax(0,1fr)!important;height:auto!important;min-height:0!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-hero{
+  height:135px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) #cm-same-house-crest{
+  width:128px!important;height:128px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-choice{
+  width:min(550px,100%)!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) #start-game{
+  margin:12px auto 20px!important;
+ }
+}
+
+
+/* Dificuldade visual fiel à regra online: outra turma = difícil (alvo móvel + escudos).
+   Não reutilizar uma imagem de Nível Médio para anunciar desafio difícil. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-same-medium-art[hidden],
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-same-medium-art[hidden],
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-interclass-hard-badge[hidden]{
+ display:none!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-interclass-hard-badge:not([hidden]){
+ box-sizing:border-box!important;display:flex!important;flex-direction:column!important;
+ justify-content:center!important;align-items:center!important;gap:0!important;
+ width:min(249px,65%)!important;min-height:66px!important;margin:0 auto!important;
+ padding:5px 16px!important;
+ border:3px solid #eac067!important;border-radius:35px!important;
+ background:linear-gradient(145deg,#18355d,#071c43)!important;
+ color:#ffe19b!important;text-align:center!important;
+ box-shadow:inset 0 0 0 1px #ffeca86a,0 6px 10px #0009!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-interclass-hard-badge strong{
+ font:800 clamp(15px,1.35vw,19px)/1.2 Cinzel,Georgia,serif!important;
+ color:#ffe2a6!important;white-space:nowrap!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-interclass-duel #cm-interclass-hard-badge span{
+ font:800 clamp(10px,1vw,13px)/1.15 Nunito,sans-serif!important;
+ color:#f2f2ea!important;white-space:nowrap!important;
+}
+
+
+/* v18 — quadro para telas de notebook 16" e monitores 19–21".
+   Modo interturmas apenas; preservar mesma turma e a mecânica de tiro. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-player-plate:not([hidden]){
+  transform:translateX(calc(38px - min(11vw,180px)))!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-house-duel:not([hidden]){
+  margin-top:clamp(81px,calc(13vh - 19px),131px)!important;
+}
+/* O banner continua separado do quadro, preservando seu vão visual. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel #start-game{
+  margin:10px auto 18px!important;
+}
+/* Imagem definitiva com transparência e proporção original, sem letras CSS. */
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel #cm-interclass-hard-badge:not([hidden]){
+  box-sizing:border-box!important;display:block!important;flex:none!important;
+  width:min(270px,75%)!important;max-width:270px!important;
+  min-height:0!important;height:auto!important;max-height:none!important;
+  padding:0!important;margin:0 auto!important;
+  border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;
+  object-fit:contain!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel #cm-interclass-hard-badge[hidden]{
+  display:none!important;
+}
+@media(max-width:950px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-player-plate:not([hidden]){
+  transform:translateX(calc(30px - min(5vw,55px)))!important;
+ }
+}
+@media(max-height:740px) and (min-width:701px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-house-duel:not([hidden]){
+  margin-top:71px!important;
+ }
+}
+@media(max-width:700px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-player-plate:not([hidden]){
+  transform:none!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-house-duel:not([hidden]){
+  margin-top:65px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel #cm-interclass-hard-badge:not([hidden]){
+  width:min(245px,75%)!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel #start-game{
+  margin:8px auto 16px!important;
+ }
+}
+
+
+/* V19 — restauração da placa dourada do aluno e prevenção do corte no botão
+   Iniciar Duelo em notebooks. Não altera artes, escalas ou mecânica. */
+body[data-page="lobby"] #view-inicio .cm-global-player-plate{
+ position:absolute!important;z-index:71!important;
+ top:clamp(16px,2.5vh,28px)!important;left:clamp(20px,3vw,42px)!important;
+ width:clamp(270px,27vw,350px)!important;
+ aspect-ratio:850 / 194!important;
+ pointer-events:none!important;
+}
+body[data-page="lobby"] #view-inicio .cm-global-player-plate[hidden]{display:none!important}
+body[data-page="lobby"] #view-inicio .cm-global-player-plate:not([hidden]){display:block!important}
+body[data-page="lobby"] #view-inicio .cm-global-player-plate>img{
+ display:block!important;width:100%!important;height:100%!important;object-fit:fill!important;
+}
+body[data-page="lobby"] #view-inicio .cm-global-player-text{
+ position:absolute!important;left:25%!important;right:5%!important;top:14%!important;bottom:12%!important;
+ display:flex!important;flex-direction:column!important;justify-content:center!important;
+ gap:1px!important;overflow:hidden!important;text-align:left!important;
+ text-shadow:0 2px 3px #001126!important;
+}
+body[data-page="lobby"] #view-inicio .cm-global-player-text strong{
+ color:white!important;font:900 clamp(12px,1.35vw,17px)/1.2 Nunito,sans-serif!important;
+ white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+body[data-page="lobby"] #view-inicio .cm-global-player-text span{
+ color:#f1ecdb!important;font:800 clamp(9px,1vw,12px)/1.2 Nunito,sans-serif!important;
+ white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;
+}
+/* Mesma Turma: deslocar somente a placa existente +38px (~1 cm) à direita. */
+@media(min-width:951px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-player-plate:not([hidden]){
+  transform:translateX(calc(38px - min(10vw,150px)))!important;
+ }
+}
+@media(min-width:701px) and (max-width:950px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-player-plate:not([hidden]){
+  transform:translateX(calc(38px - min(5vw,55px)))!important;
+ }
+}
+/* Recolher espaço vertical sem encolher as artes ou os botões. */
+@media(min-width:701px) and (max-height:800px){
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) .cm-same-house-duel:not([hidden]){
+  margin-top:clamp(68px,9vh,84px)!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel:not(.cm-interclass-duel) #start-game{
+  margin:5px auto 8px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel .cm-same-house-duel:not([hidden]){
+  margin-top:clamp(58px,9vh,72px)!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel.cm-interclass-duel #start-game{
+  margin:4px auto 8px!important;
+ }
+}
+@media(max-width:700px){
+ body[data-page="lobby"] #view-inicio .cm-global-player-plate{
+  top:10px!important;left:12px!important;width:min(275px,65vw)!important;
+ }
+}
+
+
+/* V20 — separar o botão Voltar da placa de identificação nas etapas
+   Herói/Arsenal e Escolha do Desafio. Somente a posição da placa muda. */
+@media(min-width:951px){
+ body[data-page="lobby"] #view-inicio[data-step="heroi"] > .cm-global-player-plate:not([hidden]),
+ body[data-page="lobby"] #view-inicio[data-step="desafio"] > .cm-global-player-plate:not([hidden]),
+ body[data-page="lobby"] #view-inicio[data-step="partida"] > .cm-global-player-plate:not([hidden]){
+  left:clamp(178px,13.7vw,194px)!important;
+  top:clamp(16px,2.5vh,28px)!important;
+ }
+}
+@media(min-width:701px) and (max-width:950px){
+ body[data-page="lobby"] #view-inicio > .cm-global-player-plate:not([hidden]){
+  top:76px!important;left:18px!important;
+ }
+}
+@media(max-width:700px){
+ body[data-page="lobby"] #view-inicio > .cm-global-player-plate:not([hidden]){
+  top:65px!important;left:12px!important;
+ }
+}
+
+
+/* V21 — placa do aluno mais curta em todas as telas. Os cantos e o avatar
+   são preservados por divisão em nove regiões da arte (sem achatamento).
+   Mantém altura, posicionamento e os demais elementos exatamente como estavam. */
+body[data-page="lobby"] #view-inicio .cm-global-player-plate:not([hidden]),
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-plate:not([hidden]){
+ box-sizing:border-box!important;
+ aspect-ratio:auto!important;
+ flex-shrink:0!important;
+ border:1px solid transparent!important;
+ border-image-source:url('assets/ui/challenge/same-house/placa-perfil-aluno.webp')!important;
+ border-image-slice:22 95 22 230 fill!important;
+ border-image-width:10px 38px 10px 90px!important;
+ border-image-repeat:stretch!important;
+}
+body[data-page="lobby"] #view-inicio .cm-global-player-plate:not([hidden]){
+ width:clamp(252px,22.5vw,298px)!important;
+ height:clamp(66px,6.1vw,80px)!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-plate:not([hidden]){
+ width:min(292px,37vw)!important;
+ height:72px!important;
+ flex:0 0 auto!important;
+ max-height:none!important;
+}
+body[data-page="lobby"] #view-inicio .cm-global-player-plate>img,
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-plate>img{
+ display:none!important;
+}
+body[data-page="lobby"] #view-inicio .cm-global-player-text{
+ left:31%!important;right:5%!important;
+}
+body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-text{
+ left:31%!important;right:5%!important;
+}
+@media(max-width:700px){
+ body[data-page="lobby"] #view-inicio .cm-global-player-plate:not([hidden]){
+  width:min(252px,65vw)!important;height:64px!important;
+ }
+ body[data-page="lobby"] #view-inicio[data-step="partida"] #setup.cm-same-duel .cm-same-player-plate:not([hidden]){
+  width:min(270px,83vw)!important;height:66px!important;
+ }
+}
