@@ -1,0 +1,47 @@
+name: Auditoria de leitura da API V3 Cloudflare
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/auditoria-v3.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  auditar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Validar ping, ranking e consistência dos resultados (somente GET)
+        env:
+          API: https://classmana-torneio-api-teste.jean-silveira35.workers.dev/api
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.parse
+          api=os.environ['API']
+          def get(action):
+              url=api+'?'+urllib.parse.urlencode({'action':action})
+              with urllib.request.urlopen(urllib.request.Request(url,headers={'User-Agent':'ClassMana-V3-ReadOnlyAudit'}),timeout=20) as response:
+                  data=json.load(response)
+              if not data.get('ok'): raise RuntimeError('Resposta de '+action+' nao confirmou ok')
+              return data
+          ping=get('ping')
+          print('PING',json.dumps({k:ping.get(k) for k in ('ok','api','persistent','provider')}))
+          ranking=get('ranking')
+          players=ranking.get('players',[])
+          classes=ranking.get('classes',[])
+          games=ranking.get('games',0)
+          if not isinstance(players,list) or not isinstance(classes,list): raise RuntimeError('Listas do ranking invalidas')
+          def n(row,key):return int(row.get(key) or 0)
+          wins=sum(n(p,'wins') for p in players)
+          losses=sum(n(p,'losses') for p in players)
+          draws=sum(n(p,'draws') for p in players)
+          plays=sum(n(p,'plays') for p in players)
+          print('RANKING',json.dumps({'duelos_concluidos':games,'arqueiros_com_partidas':len(players),'participacoes':plays,'vitorias':wins,'derrotas':losses,'empates':draws}))
+          print('TURMAS',json.dumps([{'casa':c.get('name'),'participacoes':n(c,'plays'),'vitorias':n(c,'wins'),'derrotas':n(c,'losses'),'empates':n(c,'draws')} for c in classes]))
+          if plays!=2*int(games):raise RuntimeError('Participacoes divergem de duas por duelo')
+          if wins!=losses:raise RuntimeError('Vitorias e derrotas individuais nao fecham')
+          if draws%2:raise RuntimeError('Empates individuais devem vir em pares')
+          if wins+losses+draws!=plays:raise RuntimeError('Somatorio de resultados individuais nao confere')
+          print('APROVADO: coerencia matematica do ranking; auditoria sem alteracao de dados')
+          PY
