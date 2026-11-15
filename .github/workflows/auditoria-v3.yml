@@ -45,3 +45,5 @@ jobs:
           if wins+losses+draws!=plays:raise RuntimeError('Somatorio de resultados individuais nao confere')
           print('APROVADO: coerencia matematica do ranking; auditoria sem alteracao de dados')
           PY
+
+# Nova verificacao somente leitura apos reset do professor (2026-11-15).
