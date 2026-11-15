@@ -430,7 +430,7 @@ html.cm-v2-resume-pending body[data-page="lobby"]::after{
         <label for="cm-teacher-team">Equipe (opcional)
           <select id="cm-teacher-team"><option value="">Sem equipe definida</option></select>
         </label>
-        <button type="submit" class="cm-teacher-primary">Cadastrar aluno na V2</button>
+        <button type="submit" class="cm-teacher-primary">Cadastrar aluno na V3</button>
       </form>
     </section>
     <section aria-labelledby="cm-teacher-manage-title">
@@ -459,7 +459,7 @@ html.cm-v2-resume-pending body[data-page="lobby"]::after{
     </section>
     <section aria-labelledby="cm-teacher-change-title">
       <h3 id="cm-teacher-change-title">🔑 Alterar senha do professor</h3>
-      <p>Informe a senha atual e defina uma nova senha. A alteração vale imediatamente na V2 e encerra o acesso atual.</p>
+      <p>Informe a senha atual e defina uma nova senha. A alteração vale imediatamente na V3 (Cloudflare) e encerra o acesso atual. Não altera a senha da V2.</p>
       <form id="cm-teacher-change-form" autocomplete="off">
         <label for="cm-teacher-old-password">Senha atual
           <input id="cm-teacher-old-password" type="password" minlength="8" maxlength="256" autocomplete="current-password" required>
@@ -474,13 +474,13 @@ html.cm-v2-resume-pending body[data-page="lobby"]::after{
       </form>
     </section>
     <section aria-labelledby="cm-teacher-reset-title">
-      <h3 id="cm-teacher-reset-title">🏆 Zerar placar de testes da V2</h3>
-      <p class="cm-teacher-warning">Zera duelos e resultados online da <strong>versão 2</strong>. Não apaga alunos nem altera a V1. Uma cópia dos registros é guardada antes do reset.</p>
+      <h3 id="cm-teacher-reset-title">🏆 Zerar placar de testes da V3</h3>
+      <p class="cm-teacher-warning">Zera somente os duelos e resultados da <strong>V3 (Cloudflare D1)</strong>. Não altera a V2/Railway nem apaga alunos. Execute somente se desejar reiniciar os resultados da V3.</p>
       <form id="cm-teacher-reset-form" autocomplete="off">
-        <label for="cm-teacher-reset-phrase">Para confirmar, digite <strong>ZERAR V2</strong>
-          <input id="cm-teacher-reset-phrase" type="text" placeholder="ZERAR V2" autocomplete="off" required>
+        <label for="cm-teacher-reset-phrase">Para confirmar, digite <strong>ZERAR V3</strong>
+          <input id="cm-teacher-reset-phrase" type="text" placeholder="ZERAR V3" autocomplete="off" required>
         </label>
-        <button type="submit" class="cm-teacher-danger">Zerar ranking e duelos V2</button>
+        <button type="submit" class="cm-teacher-danger">Zerar ranking e duelos V3</button>
       </form>
       <p id="cm-teacher-last-reset"></p>
     </section>
@@ -492,7 +492,7 @@ html.cm-v2-resume-pending body[data-page="lobby"]::after{
 <script type="module" src="wind-panel-restored.js?v=20261108hudfour01"></script>
 <script src="classmana-v2-ui.js?v=20261113-same-house-hide-legacy-v2" defer></script>
 <script src="classmana-v2-lobby-exato.js?v=arsenal-3" defer></script>
-<script type="module" src="classmana-professor-v2.js?v=20261113-teacher-recovery-v2"></script>
+<script type="module" src="classmana-professor-v3.js?v=20261115-cloudflare-admin-isolado-v1"></script>
 <script src="classmana-duelo-sorteio-v3.js?v=20261112-roleta-audios-v2" defer></script>
 <script src="classmana-duel-levels.js?v=20261115-v3-cloudflare" defer></script>
 </body>
