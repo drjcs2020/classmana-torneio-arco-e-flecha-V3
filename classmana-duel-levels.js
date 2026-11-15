@@ -4,7 +4,7 @@
  */
 (()=>{
 'use strict';
-const API='https://classmana-v2-duel-api-production.up.railway.app/api?action=ranking';
+const API='https://classmana-torneio-api-teste.jean-silveira35.workers.dev/api?action=ranking';
 const roster=()=>window.CLASSMANA_ROSTER||{};
 const valid=id=>/^[ABC]\d{2}$/.test(id||'');
 const byName=name=>{
