@@ -1,0 +1,55 @@
+name: Importar jogo ClassMana V3 (isolado da V2)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/importar-classmana-v3.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  importar:
+    if: github.repository == 'drjcs2020/classmana-torneio-arco-e-flecha-V3'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout da V3
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Buscar arquivos da V2 (somente leitura)
+        uses: actions/checkout@v4
+        with:
+          repository: drjcs2020/classmana-torneio-arco-e-flecha-V2
+          ref: main
+          path: .fonte-v2
+          persist-credentials: false
+      - name: Copiar jogo, imagens e sons
+        shell: bash
+        run: |
+          set -euo pipefail
+          rsync -a --exclude='.git' --exclude='.github/workflows/' .fonte-v2/ ./
+          rm -rf .fonte-v2
+          cat > online-config.js <<'EOF'
+          /* ClassMana V3: Cloudflare. V2 oficial permanece em Railway. */
+          export const ONLINE_API_URL = 'https://classmana-torneio-api-teste.jean-silveira35.workers.dev/api';
+          EOF
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          s = s.replace("<title>ClassMana V2 — Torneio das Três Casas</title>", "<title>ClassMana V3 — Torneio das Três Casas</title>")
+          p.write_text(s, encoding="utf-8")
+          PY
+          cat > README.md <<'EOF'
+          # ClassMana — Torneio das Três Casas V3
+          Repositório independente da V2. Interface e recursos visuais importados da V2.
+          API da V3: Cloudflare Workers + D1 (ambiente de teste).
+          V2 original e Railway não são alterados por esta importação.
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(v3): importar jogo completo e usar API Cloudflare"
+            git push
+          fi
