@@ -87,9 +87,15 @@ if(dialog&&trigger){
   try{
    const result=await request('teacherLogin',{password:$('cm-teacher-password').value});
    teacherToken=result.token;
-   await refresh();
    showAuthenticated(true);
-   notify('Acesso do professor liberado.');
+   notify('Senha aceita. Carregando informações do professor…');
+   try{
+    await refresh();
+    notify('Acesso do professor liberado.');
+   }catch(error){
+    // Falha ao consultar o painel NÃO invalida uma senha que o servidor já aceitou.
+    notify('Senha aceita, mas não foi possível carregar os dados: '+error.message,true);
+   }
   }catch(error){teacherToken='';showAuthenticated(false);notify(error.message,true)}
   finally{loading(false)}
  });
