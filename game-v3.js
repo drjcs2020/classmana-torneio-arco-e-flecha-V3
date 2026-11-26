@@ -1029,7 +1029,8 @@ async function finishMatch(){
     opponent:rival===null?'—':rival,mode:'duel',ownTotal:total,rivalTotal:rival===null?null:Number(rival)});
    $('share-help').textContent='✅ Resultado registrado no servidor do torneio.';
    $('hud-score').textContent=total;$('hud-rival').textContent=rival===null?'—':rival;
-   refreshInbox().catch(console.warn);renderRanking().catch(console.warn);
+   refreshInbox().catch(console.warn);
+   // O progresso já consulta as vitórias oficiais. O placar só atualiza ao abrir.
    void syncEquipmentProgress(current.playerId);
   }catch(error){
    if(match!==current)return;current.onlineSaveFailed=true;current.running=true;
