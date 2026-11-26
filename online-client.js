@@ -7,6 +7,8 @@ class Online {
   this.url=ONLINE_API_URL.replace(/\/$/,'');
   this.enabled=/^https:\/\/[^/]+\/api$/.test(this.url)||/^http:\/\/localhost:\d+\/api$/.test(this.url);
   this.token=sessionStorage.getItem(KEY)||'';
+  // Evita várias leituras idênticas do D1 por ranking, arsenal e níveis.
+  this.rankData=null;this.rankAt=0;this.rankPending=null;
   this.user=null;this.roster=[];this.state='off';this.lastError=null;this.gatewayReady=true;this.apiVersion=0;
  }
  async request(action,method='GET',payload={},requestId){
@@ -40,9 +42,22 @@ class Online {
  async inbox(){if(!this.user)throw Error('Escolha seu perfil.');return(await this.get('inbox')).challenges||[]}
  async create(kind,to,level='iniciante'){return(await this.post('challenge',{kind,to,level})).challenge}
  async answer(id,decision){return(await this.post('answer',{id,decision})).challenge}
- async submit(id,shots){return this.post('submit',{id,shots})}
+ async submit(id,shots){const result=await this.post('submit',{id,shots});this.invalidateRanking();return result}
  async challenge(id){return(await this.get('challenge',{id})).challenge}
- ranking(){return this.get('ranking')}
+ ranking({fresh=false}={}){
+  const now=Date.now();
+  if(!fresh&&this.rankData&&now-this.rankAt<30000)return Promise.resolve(this.rankData);
+  if(this.rankPending)return this.rankPending;
+  const pending=this.get('ranking').then(data=>{
+   this.rankData=data;this.rankAt=Date.now();
+   return data;
+  }).finally(()=>{if(this.rankPending===pending)this.rankPending=null});
+  this.rankPending=pending;return pending;
+ }
+ invalidateRanking(){this.rankData=null;this.rankAt=0}
+
  portalUrl(){return location.origin+location.pathname}
 }
 export const online=new Online();
+// Uma fonte única de ranking para os demais componentes da V3.
+window.classmanaGetRanking=()=>online.ranking();
