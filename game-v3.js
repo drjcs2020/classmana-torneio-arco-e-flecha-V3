@@ -5,7 +5,7 @@ import {CIRCUITS,LEVELS,targetMotion,mediumTwinTargets,obstacleBlocks,distanceDi
 import {arenaAudio} from './arena-audio.js?v=20261114-aplausos-final-v2';
 import {cinematics} from './classmana-cinematics.js?v=20261113-robo-resultado-v4';
 import {initAtmosphere} from './arena-atmosphere.js?v=20261113-shield-proportional-v6';
-import {online} from './online-client.js?v=api12';
+import {online} from './online-client.js?v=20261126-cache-ranking-d1';
 import {mountSpriteHUD} from './sprite-hud.js?v=1';
 const $=id=>document.getElementById(id);
 function cmResetResultPresentation(){
