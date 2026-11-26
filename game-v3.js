@@ -1436,7 +1436,7 @@ async function startOnlineClient(){
    }
   }catch(error){console.warn('Convites temporariamente indisponíveis:',error)}
   // Não abrir o painel por reconexão nem por parâmetros da URL.
-  renderRanking();
+  // Ranking apenas quando o aluno abrir o placar.
  }catch(error){
   online.state='error';
   online.lastError=String(error?.message||'Falha de conexão');
@@ -1634,7 +1634,7 @@ $('cm-v2-home-exit')?.addEventListener('click',cmEndSession);
 $('cm-ranking-choice')?.addEventListener('click',()=>openView('ranking'));
 $('cm-open-challenges')?.addEventListener('click',()=>openInbox());
 document.querySelectorAll('[data-rank]').forEach(btn=>btn.addEventListener('click',()=>{
- scoreTab=btn.dataset.rank==='classes'?'classes':'players';cmRankMode();renderRanking();
+ scoreTab=btn.dataset.rank==='classes'?'classes':'players';cmRankMode(); // Alternar aba não refaz SQL.
 }));
 function toggleArenaPause(){
  if(!match?.running||match.locked||view!=='arena')return;
@@ -1728,19 +1728,10 @@ function restoreArena(){
 }
 if(document.body.dataset.page==='arena')restoreArena();
 else processLink();
-renderRanking();
+// Ranking não é consultado automaticamente na abertura.
 // O indicador de transição só desaparece após o restabelecimento da sessão.
  // Nenhuma etapa intermediária é exibida durante esse processo.
  startOnlineClient().finally(()=>{
   document.documentElement.classList.remove('cm-v2-resume-pending');
  });
-setInterval(async()=>{
- if(!online.user||online.state!=='ready'||document.visibilityState==='hidden')return;
- try{
-  const id=online.user.id;
-  const before=onlineInbox.filter(ch=>cmAlertable(ch,id)&&cmNoticeSnapshot[ch.id]!==cmNotificationState(ch)).length;
-  await refreshInbox();
-  const after=onlineInbox.filter(ch=>cmAlertable(ch,id)&&cmNoticeSnapshot[ch.id]!==cmNotificationState(ch)).length;
-  if(after>before)toast('🔔 Novidade no torneio! Abra Meus desafios para ver.');
- }catch(error){console.warn('Atualização dos convites:',error)}
-},20000);
+// Sem consulta periódica: o aluno só atualiza desafios ao agir.
