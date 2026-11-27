@@ -649,13 +649,11 @@ export function initScene(canvas, getSettings) {
     }else{
       slim.setLocalScale(spec.width*5*factor,spec.width*5*factor,1.02*factor);
     }
-    // A flecha de poder tem eixo longitudinal original +Z; a rotação
-    // do GLB [0,180,0] a aponta para -Z (alvo). NÃO girar o suporte:
-    // o antigo X=90 fazia o projétil e a flecha cravada voarem de lado.
-    // A mesma orientação vale na mão, em voo e no alvo.
+    // SOMENTE arco nível 4: girar a flecha +90° ao redor de X,
+    // para orientar seu comprimento no sentido da profundidade.
+    // Não mudar a física do projétil nem as flechas de outros arcos.
+    if(equipment.bow==='lendario')slim.setLocalEulerAngles(90,0,180);
     parentEntity.addChild(slim);
-    // Restaurar o tamanho original do GLB para desfazer a malha gigante.
-    // A posição Y do encaixe, o arco e as calibrações dos outros níveis não mudam.
     model.setLocalEulerAngles(...spec.rot);
     model.setLocalScale(spec.scale,spec.scale,spec.scale);
     model.setLocalPosition(...spec.offset);
