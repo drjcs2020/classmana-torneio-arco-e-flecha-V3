@@ -639,7 +639,10 @@ export function initScene(canvas, getSettings) {
     // Somente nível 4: aumentar 35% a flecha (0.18 * 1.35 = 0.243).
     // Sem alterar trajetória, flechas dos demais níveis ou WeaponPivot.
     const factor=equipment.bow==='lendario'?.243:equipment.bow==='recurvo'?.18:1;
-    slim.setLocalScale(spec.width*5*factor,spec.width*5*factor,1.02*factor);
+    // Somente nível 4: dobrar a espessura (eixos transversais X/Y),
+    // mantendo inalterado o comprimento axial Z e a orientação da flecha.
+    const thickness=equipment.bow==='lendario'?2:1;
+    slim.setLocalScale(spec.width*5*factor*thickness,spec.width*5*factor*thickness,1.02*factor);
     // SOMENTE arco nível 4: girar a flecha +90° ao redor de X,
     // para orientar seu comprimento no sentido da profundidade.
     // Não mudar a física do projétil nem as flechas de outros arcos.
