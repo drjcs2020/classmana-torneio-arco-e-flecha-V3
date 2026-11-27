@@ -932,7 +932,7 @@ export function initScene(canvas, getSettings) {
   // Exclusivo do Arco Lendário (nível 4): subir o encaixe da flecha
   // no eixo vertical PlayCanvas +Y. Sem alteração de X, Z, giro ou escala.
   // Usa altura fixa para não depender da leitura AABB do modelo 3D.
-  const LEGENDARY_ARROW_Y_OFFSET=0.52;
+  const LEGENDARY_ARROW_Y_OFFSET=0.44;
   function arrowNockPose(){
     if(GEAR_BY_ID[equipment.bow]?.type==='Besta')
       return {x:0,y:.08,z:.12,yaw:0};
