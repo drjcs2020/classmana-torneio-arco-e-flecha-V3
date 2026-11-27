@@ -38,6 +38,20 @@ function readEquipment(playerId=''){
   return {bow:EQUIPMENT.bows[x.bow]?x.bow:'classico',arrow:'rubi'};}
  catch{return {bow:'classico',arrow:'rubi'}}
 }
+// Guarda somente a última contagem recebida de um ranking oficial válido.
+ // O cache é por aluno, nunca libera vitórias novas nem envia pontuação ao servidor.
+const VERIFIED_WINS_PREFIX='classmana-archery-verified-wins-v3:';
+function readVerifiedWins(playerId){
+ if(!/^[ABC]\d{2}$/.test(playerId||''))return null;
+ try{
+  const saved=JSON.parse(localStorage.getItem(VERIFIED_WINS_PREFIX+playerId)||'null');
+  return saved&&Number.isSafeInteger(saved.wins)&&saved.wins>=0? saved.wins:null;
+ }catch{return null}
+}
+function saveVerifiedWins(playerId,wins){
+ if(!/^[ABC]\d{2}$/.test(playerId||'')||!Number.isSafeInteger(wins)||wins<0)return;
+ try{localStorage.setItem(VERIFIED_WINS_PREFIX+playerId,JSON.stringify({wins,verifiedAt:Date.now()}))}catch{}
+}
 let equipment=readEquipment(),gearProgress={wins:0,confirmed:false,playerId:''};
 const gearCarousel=mountEquipmentInventory({selected:equipment.bow,onSelect:id=>chooseEquipment('bow',id)});
 function applyEquipment(){
@@ -52,9 +66,16 @@ function saveEquipment(playerId=identifiedPlayerId){
 }
 function loadPlayerEquipment(playerId){
  if(!/^[ABC]\d{2}$/.test(playerId||''))return;
- gearProgress={wins:0,confirmed:false,playerId};
- // Enquanto o placar não confirmar as vitórias, só o arco inicial fica ativo.
- equipment={bow:'classico',arrow:'rubi'};applyEquipment();
+ const cached=readVerifiedWins(playerId);
+ gearProgress={wins:cached??0,confirmed:cached!==null,playerId};
+ // Não apagar a seleção nem bloquear arsenal já confirmado em outro acesso.
+ const preferred=readEquipment(playerId).bow;
+ equipment={bow:cached!==null&&isGearUnlocked(preferred,cached)?preferred:'classico',arrow:'rubi'};
+ applyEquipment();
+ if(cached!==null){
+  window.classmanaGearProgress={playerId,wins:cached,level:getGearLevel(cached),confirmed:true,cached:true};
+  window.dispatchEvent(new Event('classmana:v2-lobby-session-changed'));
+ }
  void syncEquipmentProgress(playerId);
 }
 async function syncEquipmentProgress(playerId){
@@ -63,22 +84,38 @@ async function syncEquipmentProgress(playerId){
  try{
   const ranking=await online.ranking();
   if((identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent())!==requested)return;
-  const row=(ranking.players||[]).find(p=>p.id===requested);
-  const wins=Math.max(0,Number(row?.wins)||0);
+  if(!ranking?.ok||!Array.isArray(ranking.players))throw Error('Ranking oficial incompleto');
+  const row=ranking.players.find(p=>p.id===requested);
+  if(!row||!Number.isFinite(Number(row.wins)))throw Error('Aluno ausente do ranking');
+  const wins=Math.max(0,Math.trunc(Number(row.wins)));
   gearProgress={wins,confirmed:true,playerId:requested};
+  saveVerifiedWins(requested,wins);
   if(document.body.dataset.page==='lobby'){
    const preferred=readEquipment(requested).bow;
    equipment={bow:isGearUnlocked(preferred,wins)?preferred:'classico',arrow:'rubi'};
    if(preferred!==equipment.bow)saveEquipment(requested);
    applyEquipment();
   }
-  window.classmanaGearProgress={playerId:requested,wins,level:getGearLevel(wins),confirmed:true};
+  window.classmanaGearProgress={playerId:requested,wins,level:getGearLevel(wins),confirmed:true,cached:false};
   window.dispatchEvent(new Event('classmana:v2-lobby-session-changed'));
  }catch(error){
   if((identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent())!==requested)return;
-  gearProgress={wins:0,confirmed:false,playerId:requested};
-  if(document.body.dataset.page==='lobby'){equipment={bow:'classico',arrow:'rubi'};applyEquipment();}
-  console.warn('[ClassMana] Vitórias ainda não verificadas:',error);
+  // Falha de rede não é derrota: preservar a última confirmação deste aluno.
+  const cached=readVerifiedWins(requested);
+  if(cached!==null){
+   gearProgress={wins:cached,confirmed:true,playerId:requested};
+   if(document.body.dataset.page==='lobby'){
+    const preferred=readEquipment(requested).bow;
+    equipment={bow:isGearUnlocked(preferred,cached)?preferred:'classico',arrow:'rubi'};
+    applyEquipment();
+   }
+   window.classmanaGearProgress={playerId:requested,wins:cached,level:getGearLevel(cached),confirmed:true,cached:true};
+   window.dispatchEvent(new Event('classmana:v2-lobby-session-changed'));
+  }else{
+   // Primeira entrada sem ranking: não conceder acesso aos arcos bloqueados.
+   gearProgress={wins:0,confirmed:false,playerId:requested};
+  }
+  console.warn('[ClassMana] Consulta de ranking falhou; progresso previamente verificado preservado:',error);
  }
  gearCarousel?.setProgress(gearProgress);
 }
