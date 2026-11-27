@@ -644,7 +644,7 @@ export function initScene(canvas, getSettings) {
     // SOMENTE arco nível 4: girar a flecha +90° ao redor de X,
     // para orientar seu comprimento no sentido da profundidade.
     // Não mudar a física do projétil nem as flechas de outros arcos.
-    if(equipment.bow==='lendario')slim.setLocalEulerAngles(90,0,0);
+    if(equipment.bow==='lendario')slim.setLocalEulerAngles(90,0,180);
     parentEntity.addChild(slim);
     model.setLocalEulerAngles(...spec.rot);
     model.setLocalScale(spec.scale,spec.scale,spec.scale);
@@ -860,13 +860,13 @@ export function initScene(canvas, getSettings) {
       // Nível 4: após o alinhamento vertical do modelo, corrigir somente
       // a face por giro de +90° no eixo Y (vertical do PlayCanvas).
       // A flecha é outro nó e não herda a rotação do arco.
-      const visual=new pc.Entity('Arco lendario - face Y +90');
-      visual.setLocalEulerAngles(0,90,0);
+      const visual=new pc.Entity('Arco lendario - face Y +90 Z +180');
+      visual.setLocalEulerAngles(0,90,180);
       visual.setLocalScale(.75,.75,.75);
       bowVisualPivot.addChild(visual);
       visual.addChild(model);
       parent.dataset.legendBowYaw='90';
-      parent.dataset.legendBowRoll='0';
+      parent.dataset.legendBowRoll='180';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='recurvo'){
       // Nível 5 permanece exatamente na calibração anterior.
