@@ -57,30 +57,49 @@ function loadPlayerEquipment(playerId){
  equipment={bow:'classico',arrow:'rubi'};applyEquipment();
  void syncEquipmentProgress(playerId);
 }
-async function syncEquipmentProgress(playerId){
- if(!/^[ABC]\d{2}$/.test(playerId||''))return;
- const requested=playerId;
- try{
-  const ranking=await online.ranking();
-  if((identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent())!==requested)return;
-  const row=(ranking.players||[]).find(p=>p.id===requested);
-  const wins=Math.max(0,Number(row?.wins)||0);
-  gearProgress={wins,confirmed:true,playerId:requested};
-  if(document.body.dataset.page==='lobby'){
-   const preferred=readEquipment(requested).bow;
-   equipment={bow:isGearUnlocked(preferred,wins)?preferred:'classico',arrow:'rubi'};
-   if(preferred!==equipment.bow)saveEquipment(requested);
-   applyEquipment();
+// Repetir apenas falhas transitórias sem cache, sem F5 e sem chamadas permanentes.
+const progressRequests=new Map();
+function syncEquipmentProgress(playerId){
+ if(!/^[ABC]\d{2}$/.test(playerId||''))return Promise.resolve();
+ if(progressRequests.has(playerId))return progressRequests.get(playerId);
+ const pending=(async()=>{
+  const requested=playerId;
+  const belongs=()=>(identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent())===requested;
+  for(let attempt=0;attempt<4;attempt++){
+   if(!belongs())return;
+   if(attempt)await new Promise(resolve=>setTimeout(resolve,[0,900,1900,3500][attempt]));
+   if(!belongs())return;
+   try{
+    const ranking=await online.ranking(); // Sempre consulta diretamente a API oficial.
+    if(!belongs())return;
+    if(ranking?.ok!==true||!Array.isArray(ranking.players))throw Error('Ranking incompleto');
+    const row=ranking.players.find(p=>p.id===requested);
+    if(!row||!Number.isFinite(Number(row.wins)))throw Error('Nível do aluno ausente no ranking');
+    const wins=Math.max(0,Math.trunc(Number(row.wins)));
+    gearProgress={wins,confirmed:true,playerId:requested};
+    if(document.body.dataset.page==='lobby'){
+     const preferred=readEquipment(requested).bow;
+     equipment={bow:isGearUnlocked(preferred,wins)?preferred:'classico',arrow:'rubi'};
+     if(preferred!==equipment.bow)saveEquipment(requested);
+     applyEquipment();
+    }
+    window.classmanaGearProgress={playerId:requested,wins,level:getGearLevel(wins),confirmed:true};
+    window.dispatchEvent(new Event('classmana:v2-lobby-session-changed'));
+    gearCarousel?.setProgress(gearProgress);
+    return;
+   }catch(error){
+    console.warn('[ClassMana] Tentativa de consulta do nível '+(attempt+1)+'/4:',error);
+    if(attempt===3&&belongs()){
+     // Uma falha de comunicação não zera vitórias já confirmadas na sessão.
+     if(gearProgress.playerId!==requested||!gearProgress.confirmed)
+      gearProgress={wins:0,confirmed:false,playerId:requested};
+     gearCarousel?.setProgress(gearProgress);
+    }
+   }
   }
-  window.classmanaGearProgress={playerId:requested,wins,level:getGearLevel(wins),confirmed:true};
-  window.dispatchEvent(new Event('classmana:v2-lobby-session-changed'));
- }catch(error){
-  if((identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent())!==requested)return;
-  gearProgress={wins:0,confirmed:false,playerId:requested};
-  if(document.body.dataset.page==='lobby'){equipment={bow:'classico',arrow:'rubi'};applyEquipment();}
-  console.warn('[ClassMana] Vitórias ainda não verificadas:',error);
- }
- gearCarousel?.setProgress(gearProgress);
+ })().finally(()=>{if(progressRequests.get(playerId)===pending)progressRequests.delete(playerId)});
+ progressRequests.set(playerId,pending);
+ return pending;
 }
 function chooseEquipment(key,value){
  if(match?.running&&view==='arena'){toast('Personalize o equipamento antes de iniciar a próxima rodada.');return}
