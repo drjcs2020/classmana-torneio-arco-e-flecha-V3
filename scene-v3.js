@@ -640,7 +640,11 @@ export function initScene(canvas, getSettings) {
     slim.setLocalScale(spec.width*5,spec.width*5,1.02);
     parentEntity.addChild(slim);
     model.setLocalEulerAngles(...spec.rot);
-    model.setLocalScale(spec.scale,spec.scale,spec.scale);
+    // NÍVEL 4 EXCLUSIVAMENTE: arrow-power.glb tem comprimento original no eixo Z.
+    // Engrossar X/Y no próprio modelo evita alterar posição, comprimento
+    // ou transformações compartilhadas dos equipamentos 1, 2, 3 e 5.
+    const thickness4=equipment.bow==='lendario'&&file==='arrow-power.glb'?1.8:1;
+    model.setLocalScale(spec.scale*thickness4,spec.scale*thickness4,spec.scale);
     model.setLocalPosition(...spec.offset);
     slim.addChild(model);
     return slim;
