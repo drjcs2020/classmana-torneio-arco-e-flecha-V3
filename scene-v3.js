@@ -851,16 +851,16 @@ export function initScene(canvas, getSettings) {
       parent.dataset.windBowFaceYaw='90';
     }else if(gear.id==='lendario'){
       // SOMENTE NÍVEL 4 (Arco Lendário / bow-legend.glb):
-      // corrigir a face lateral e o giro no plano da tela do GLB.
+      // corrigir somente a face lateral; manter a orientação vertical que o GLB já possuía.
       // Não girar WeaponPivot: a flecha, a mira e os demais arcos
       // continuam nas suas orientações originais.
-      const legendFacing=new pc.Entity('Arco Lendario nivel 4 - Y 90 Z 90');
-      legendFacing.setLocalEulerAngles(0,90,90);
+      const legendFacing=new pc.Entity('Arco Lendario nivel 4 - Y 90 Z 0');
+      legendFacing.setLocalEulerAngles(0,90,0);
       legendFacing.setLocalScale(.75,.75,.75);
       bowVisualPivot.addChild(legendFacing);
       legendFacing.addChild(model);
       parent.dataset.legendBowYaw='90';
-      parent.dataset.legendBowRoll='90';
+      parent.dataset.legendBowRoll='0';
       parent.dataset.legendBowScale='0.75';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='recurvo'){
