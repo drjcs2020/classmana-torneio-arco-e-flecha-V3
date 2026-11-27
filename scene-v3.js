@@ -686,6 +686,32 @@ export function initScene(canvas, getSettings) {
       arrowLoaded.__mesh3d?.destroy();
       const mesh=res.instantiateRenderEntity();mesh.name='Flecha '+file;
       const calibrated=appendArrowModel(arrowLoaded,mesh,file);
+      if(id==='lendario'){
+        // Calcular o ponto médio visual da flecha em coordenadas do encaixe.
+        // A compensação atua somente em Y; NÃO muda rotação, escala ou profundidade.
+        calibrated.syncHierarchy();
+        let low=Infinity,high=-Infinity;
+        for(const render of calibrated.findComponents('render')){
+          for(const instance of render.meshInstances||[]){
+            const bb=instance.aabb;
+            if(!bb)continue;
+            for(const sx of [-1,1])for(const sy of [-1,1])for(const sz of [-1,1]){
+              const world=new pc.Vec3(
+                bb.center.x+sx*bb.halfExtents.x,
+                bb.center.y+sy*bb.halfExtents.y,
+                bb.center.z+sz*bb.halfExtents.z);
+              const local=arrowLoaded.worldToLocal(world);
+              low=Math.min(low,local.y);
+              high=Math.max(high,local.y);
+            }
+          }
+        }
+        // Nunca permitir que a flecha continue no pé do arco.
+        legendaryArrowLift=Number.isFinite(low)&&Number.isFinite(high)
+          ?Math.max(.15,Math.min(1.25,-(low+high)/2)):.45;
+        const nock=arrowNockPose();
+        arrowLoaded.setLocalPosition(nock.x,nock.y,nock.z);
+      }
       for(const child of arrowLoaded.children)if(child!==calibrated)child.enabled=false;
       arrowLoaded.__mesh3d=calibrated;
       owner.__arrowLoaded=true;
@@ -929,6 +955,9 @@ export function initScene(canvas, getSettings) {
     });
   }
 
+  // Somente nível 4: elevação visual para alinhar o centro da flecha ao centro do arco.
+  // O valor é recalculado a partir da geometria do GLB; outros níveis usam a pose anterior.
+  let legendaryArrowLift=0;
   function arrowNockPose(){
     if(GEAR_BY_ID[equipment.bow]?.type==='Besta')
       return {x:0,y:.08,z:.12,yaw:0};
@@ -940,6 +969,8 @@ export function initScene(canvas, getSettings) {
     // sem alterar orientação, profundidade ou puxada.
     if(equipment.bow==='classico')
       return {x:-.16,y:.01,z:.13,yaw:0};
+    if(equipment.bow==='lendario')
+      return {x:.015,y:legendaryArrowLift,z:.13,yaw:0};
     return {x:.015,y:0,z:.13,yaw:0};
   }
   function updateBowAim(){
