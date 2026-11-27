@@ -13,7 +13,7 @@ const byName=name=>{
 };
 let official=null,loading=false,requestTime=0,renderTimer=0;
 const level=wins=>{const n=Math.max(0,Number(wins)||0);return n>=10?7:n>=8?6:n>=6?5:n>=4?4:n>=2?3:n>=1?2:1};
-const lvl=id=>!official||!valid(id)||!official.has(id)?'—':'Nv. '+level(official.get(id));
+const lvl=id=>!official||!valid(id)?'—':'Nv. '+level(official.get(id)||0);
 const decorate=(node,id)=>{
  if(!node||!valid(id))return;
  const value=lvl(id);
@@ -104,19 +104,7 @@ const watch=()=>{
  });
  observer.observe(document.body,{subtree:true,childList:true});
  document.addEventListener('change',schedule);
- window.addEventListener('classmana:v2-lobby-session-changed',()=>{
-  // O ranking do cliente principal já confirmou as vitórias deste aluno.
-  // Reutilizar a confirmação em vez de depender de outra requisição,
-  // inclusive quando a segunda consulta falhar.
-  const progress=window.classmanaGearProgress;
-  if(progress?.confirmed&&valid(progress.playerId)&&Number.isFinite(Number(progress.wins))){
-   if(!official)official=new Map();
-   official.set(progress.playerId,Math.max(0,Number(progress.wins)));
-  }
-  schedule();
-  // Ranking completo para os rivais: reaproveita o cache do cliente principal.
-  void refresh();
- });
+ window.addEventListener('classmana:v2-lobby-session-changed',()=>{schedule();void refresh()});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule()});
  document.addEventListener('click',event=>{
   if(event.target.closest?.('[data-play-mode],#cm-draw-roll,#cm-open-challenges,[data-v2-action="desafios"],#cm-same-open-rivals')){schedule();void refresh()}
