@@ -97,12 +97,20 @@ const watch=()=>{
  });
  observer.observe(document.body,{subtree:true,childList:true});
  document.addEventListener('change',schedule);
- window.addEventListener('classmana:v2-lobby-session-changed',()=>{schedule();void refresh()});
+ window.addEventListener('classmana:v2-lobby-session-changed',schedule);
+  // O jogo já buscou o ranking oficial: reutilizar a mesma resposta, sem nova chamada.
+  window.addEventListener('classmana:official-ranking-loaded',()=>{
+    const players=window.classmanaLastOfficialRanking;
+    if(!Array.isArray(players))return;
+    official=new Map(players.filter(p=>valid(p.id)).map(p=>[p.id,Math.max(0,Number(p.wins)||0)]));
+    requestTime=Date.now();
+    schedule();
+  });
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){schedule();void refresh()}});
  document.addEventListener('click',event=>{
   if(event.target.closest?.('[data-play-mode],#cm-draw-roll,#cm-open-challenges,[data-v2-action="desafios"],#cm-same-open-rivals')){schedule();void refresh()}
  },true);
- schedule();void refresh();
+ schedule();
 };
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',watch,{once:true});else watch();
 })();
