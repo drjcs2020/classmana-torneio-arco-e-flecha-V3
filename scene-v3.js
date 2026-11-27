@@ -660,30 +660,6 @@ export function initScene(canvas, getSettings) {
     model.setLocalScale(spec.scale,spec.scale,spec.scale);
     model.setLocalPosition(...spec.offset);
     slim.addChild(model);
-    if(equipment.bow==='lendario'&&file==='arrow-power.glb'){
-      // Conferido no GLB original: o comprimento real é Y (84.41818);
-      // X e Z são a seção transversal. A rotação interna do GLB
-      // converte Y em profundidade na cena, portanto NÃO alterar a
-      // escala do nó externo "model" ou do suporte "slim".
-      // Centro transversal original obtido dos nós Sketchfab do arquivo.
-      const centerX=1.3041540384292603,centerZ=0.7946550250053406;
-      const widthFactor=2;
-      const visited=new Set();
-      for(const render of model.findComponents('render')){
-        const part=render.entity;
-        if(!part||visited.has(part))continue;
-        visited.add(part);
-        const scale=part.getLocalScale(),pos=part.getLocalPosition();
-        // Aumentar SOMENTE largura e espessura da geometria original.
-        // Preservar Y, a direção do disparo e o centro do modelo.
-        part.setLocalScale(scale.x*widthFactor,scale.y,scale.z*widthFactor);
-        part.setLocalPosition(
-          pos.x-(widthFactor-1)*centerX,
-          pos.y,
-          pos.z-(widthFactor-1)*centerZ);
-      }
-      parent.dataset.level4ArrowThickness='mesh-xz-2x';
-    }
     return slim;
   }
   function selectedArrow(){
