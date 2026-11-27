@@ -1,4 +1,4 @@
-import {initScene} from './scene-v3.js?v=20261127-recurvo-n5-y180-z50';
+import {initScene} from './scene-v3.js?v=20261127-lendario-n4-y90-z90';
 import {GEAR,GEAR_BY_ID,getGearLevel,isGearUnlocked} from './equipment-catalog.js?v=win-progress-linear-20261110';
 import {mountEquipmentInventory} from './equipment-inventory.js?v=arsenal-button-colors-20261111';
 import {CIRCUITS,LEVELS,targetMotion,mediumTwinTargets,obstacleBlocks,distanceDifficulty,flightSeconds} from './arena-difficulty.js?v=20261113-hard-slower-v6';
