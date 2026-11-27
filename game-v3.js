@@ -64,7 +64,8 @@ async function syncEquipmentProgress(playerId){
   const ranking=await online.ranking();
   if((identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent())!==requested)return;
   const row=(ranking.players||[]).find(p=>p.id===requested);
-  const wins=Math.max(0,Number(row?.wins)||0);
+  if(!row||!Number.isFinite(Number(row.wins)))throw Error('Aluno ainda não encontrado no ranking oficial.');
+  const wins=Math.max(0,Number(row.wins));
   gearProgress={wins,confirmed:true,playerId:requested};
   if(document.body.dataset.page==='lobby'){
    const preferred=readEquipment(requested).bow;
@@ -76,8 +77,10 @@ async function syncEquipmentProgress(playerId){
   window.dispatchEvent(new Event('classmana:v2-lobby-session-changed'));
  }catch(error){
   if((identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent())!==requested)return;
-  gearProgress={wins:0,confirmed:false,playerId:requested};
-  if(document.body.dataset.page==='lobby'){equipment={bow:'classico',arrow:'rubi'};applyEquipment();}
+  // Não transformar erro de rede ou resposta incompleta em perda de vitórias.
+  // Nem substituir a preferência de arco armazenada para o aluno.
+  if(gearProgress.playerId!==requested||!gearProgress.confirmed)
+   gearProgress={wins:0,confirmed:false,playerId:requested};
   console.warn('[ClassMana] Vitórias ainda não verificadas:',error);
  }
  gearCarousel?.setProgress(gearProgress);
@@ -147,7 +150,8 @@ function cmOpenActiveLobbyStep(step){
  identifiedPlayerId=id;
  if(cmSessionId()!==id||cmStoredLobbyStudent()!==id)cmSaveStudent(id);
  if(gearProgress.playerId!==id)loadPlayerEquipment(id);
- // Reabrir uma tela com o mesmo aluno não requer novo ranking.
+ else if(!gearProgress.confirmed)void syncEquipmentProgress(id);
+ // Revalidar apenas quando a consulta anterior não confirmou as vitórias.
  selectHouse(id[0]);
  fillPlayer(id);
  $('player').value=id;$('player').disabled=true;
@@ -1406,7 +1410,8 @@ async function startOnlineClient(){
    if(!online.user){try{await online.login(sessionId)}catch(err){console.warn('Não foi possível reconectar o aluno:',err);cmForgetStudent();return;}}
    identifiedPlayerId=sessionId;
    if(gearProgress.playerId!==sessionId)loadPlayerEquipment(sessionId);
-   // Ao restaurar o mesmo perfil, usar o progresso já obtido.
+   else if(!gearProgress.confirmed)void syncEquipmentProgress(sessionId);
+   // Ao reconectar, revalidar apenas se o progresso não estiver confirmado.
    selectHouse(sessionId[0]);fillPlayer(sessionId);populateIdentityOptions();
    $('player').value=sessionId;$('player').disabled=true;updateMode();
    // A reconexão não deve retirar o aluno da tela que acabou de abrir.
