@@ -649,24 +649,15 @@ export function initScene(canvas, getSettings) {
     }else{
       slim.setLocalScale(spec.width*5*factor,spec.width*5*factor,1.02*factor);
     }
-    // O eixo longo original da Flecha de Poder é Y, mas o GLB já o
-    // converte internamente em Z. Não girar o suporte X=90: isso fazia
-    // o projétil passar de lado e a flecha aparecer vertical no alvo.
+    // SOMENTE arco nível 4: girar a flecha +90° ao redor de X,
+    // para orientar seu comprimento no sentido da profundidade.
+    // Não mudar a física do projétil nem as flechas de outros arcos.
+    if(equipment.bow==='lendario')slim.setLocalEulerAngles(90,0,180);
     parentEntity.addChild(slim);
     model.setLocalEulerAngles(...spec.rot);
     model.setLocalScale(spec.scale,spec.scale,spec.scale);
     model.setLocalPosition(...spec.offset);
     slim.addChild(model);
-    if(equipment.bow==='lendario'&&file==='arrow-power.glb'){
-      // Haste de reforço localizada: NÃO escalar ou mover o GLB original.
-      // O arquivo tem comprimento de 84.41818 * 0.0165841 ≈ 1.4,
-      // centralizado pelo offset Z=-0.704571. A haste ocupa o eixo Z.
-      // Cobre só a parte reta, sem aumentar o comprimento ou as penas.
-      const shaft=material('#25292d',{metal:.32,rough:.34});
-      tube('Level 4 arrow thicker shaft only',
-        [[0,0,-1.30],[0,0,-.80],[0,0,-.22]],
-        [.020,.020,.019],shaft,slim,12);
-    }
     return slim;
   }
   function selectedArrow(){
@@ -896,14 +887,12 @@ export function initScene(canvas, getSettings) {
       parent.dataset.legendBowRoll='0';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='recurvo'){
-      // Nível 5: a calibração longitudinal mantém o arco vertical.
-      // Inverter SOMENTE a face Y (180°), sem Z que inclinava o arco.
-      // A flecha e a mira não herdam essa rotação.
-      const visual=new pc.Entity('Arco recurvo nivel 5 - face Y 180');
-      visual.setLocalEulerAngles(0,180,0);
+      // Nível 5 permanece exatamente na calibração anterior.
+      const visual=new pc.Entity('Arco alinhado pelo eixo longitudinal');
+      visual.setLocalEulerAngles(0,0,0);
       bowVisualPivot.addChild(visual);
       visual.addChild(model);
-      parent.dataset.recurveBowYaw='180';
+      parent.dataset.recurveBowYaw='0';
       parent.dataset.recurveBowRoll='0';
       parent.dataset.windBowFaceYaw='0';
     }else{
