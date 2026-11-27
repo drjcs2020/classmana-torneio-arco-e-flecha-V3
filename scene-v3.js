@@ -898,16 +898,24 @@ export function initScene(canvas, getSettings) {
       parent.dataset.legendBowRoll='0';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='recurvo'){
-      // Nível 5, exclusivamente: na captura de referência a haste do
-      // Arco Recurvo sobe em diagonal (~25° da horizontal). Girar o
-      // suporte visual ~65° no plano XY alinha as pontas à vertical.
-      // Não girar a flecha/mira: são irmãos deste nó, e não seus filhos.
-      const visual=new pc.Entity('Arco Recurvo nivel 5 - alinhamento vertical');
-      visual.setLocalEulerAngles(0,0,-65);
+      // Etapa 1: o GLB já foi alinhado pela direção longitudinal real
+      // em bowLongAxis3D acima. Não aplicar Z=-65 com base numa captura.
+      // Etapa 2: medir a face REAL da malha depois do alinhamento:
+      // arco no plano YZ (largura Z > largura X) precisa girar em Y
+      // para ficar no plano XY, voltado para a câmera (+Z).
+      // A decisão usa o AABB do GLB, não a orientação da imagem 2D.
+      const faceBounds=bounds();
+      const spanX=faceBounds.size[0],spanZ=faceBounds.size[2];
+      const faceTurn=Number.isFinite(spanX)&&Number.isFinite(spanZ)&&
+        spanZ>spanX*1.25?90:0;
+      const visual=new pc.Entity('Arco Recurvo nivel 5 - orientação pela malha GLB');
+      visual.setLocalEulerAngles(0,faceTurn,0);
       bowVisualPivot.addChild(visual);
       visual.addChild(model);
-      parent.dataset.recurveBowYaw='0';
-      parent.dataset.recurveBowRoll='-65';
+      parent.dataset.recurveBowYaw=String(faceTurn);
+      parent.dataset.recurveBowRoll='0';
+      parent.dataset.recurveSpanX=spanX.toFixed(4);
+      parent.dataset.recurveSpanZ=spanZ.toFixed(4);
       parent.dataset.windBowFaceYaw='0';
     }else{
       bowVisualPivot.addChild(model);
