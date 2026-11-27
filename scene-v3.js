@@ -635,10 +635,10 @@ export function initScene(canvas, getSettings) {
     // Nunca calcular escala por AABB runtime: o arquivo standard possui
     // rotação e escala internas, e essa medição produzia uma tora gigante.
     const slim=new pc.Entity('Arrow calibrated shaft');
-    // Níveis 1, 2, 3 e 5 preservam suas escalas atuais.
-    // Somente nível 4: aumentar 35% a flecha (0.18 * 1.35 = 0.243).
+    // Nível 7: flecha de poder usa fator 0.30, próximo ao nível 4; demais níveis preservados.
+    // Nível 4 preserva seu fator 0.243; nível 7 não usa mais escala 1 (gigante).
     // Sem alterar trajetória, flechas dos demais níveis ou WeaponPivot.
-    const factor=equipment.bow==='lendario'?.243:equipment.bow==='recurvo'?.18:1;
+    const factor=equipment.bow==='lendario'?.243:equipment.bow==='recurvo'?.18:equipment.bow==='aloy'&&file==='arrow-power.glb'?.30:1;
     // Exclusivamente a flecha do nível 4: a calibração X/Y anterior
     // alongou a malha visual ao invés de engrossar sua haste.
     // Encurtar X/Y em 40% em relação ao último ajuste e engrossar
@@ -649,10 +649,10 @@ export function initScene(canvas, getSettings) {
     }else{
       slim.setLocalScale(spec.width*5*factor,spec.width*5*factor,1.02*factor);
     }
-    // SOMENTE arco nível 4: girar a flecha +90° ao redor de X,
-    // para orientar seu comprimento no sentido da profundidade.
-    // Não mudar a física do projétil nem as flechas de outros arcos.
-    if(equipment.bow==='lendario')slim.setLocalEulerAngles(90,0,180);
+    // Níveis 4 e 7 usam a mesma Flecha de Poder (GLB). Orientar a haste
+    // pela profundidade rumo ao alvo, mantendo arco e mira fora deste pivô.
+    if(equipment.bow==='lendario'||(equipment.bow==='aloy'&&file==='arrow-power.glb'))
+      slim.setLocalEulerAngles(90,0,180);
     parentEntity.addChild(slim);
     model.setLocalEulerAngles(...spec.rot);
     model.setLocalScale(spec.scale,spec.scale,spec.scale);
