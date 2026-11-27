@@ -146,7 +146,8 @@ function cmOpenActiveLobbyStep(step){
  if(!id||(identifiedPlayerId&&identifiedPlayerId!==id)||(online.user&&online.user.id!==id))return false;
  identifiedPlayerId=id;
  if(cmSessionId()!==id||cmStoredLobbyStudent()!==id)cmSaveStudent(id);
- if(gearProgress.playerId!==id)loadPlayerEquipment(id);else void syncEquipmentProgress(id);
+ if(gearProgress.playerId!==id)loadPlayerEquipment(id);
+ // Reabrir uma tela com o mesmo aluno não requer novo ranking.
  selectHouse(id[0]);
  fillPlayer(id);
  $('player').value=id;$('player').disabled=true;
@@ -1179,12 +1180,8 @@ async function loginStudent(){
   // A confirmação do perfil libera imediatamente a partida; a caixa
   // de convites não pode travar o botão Iniciar por demora do Google.
   toast('✅ Perfil confirmado. Você já pode jogar.');
-  // Atualizar o contador sem abrir a caixa de desafios automaticamente.
-  void refreshInbox().then(rows=>{
-   if(online.user?.id!==user.id)return;
-   const pending=rows.filter(c=>c.recipient.id===user.id&&c.status==='PENDENTE').length;
-   if(pending)toast('🔔 Você recebeu '+pending+' desafio(s)! Abra Meus desafios para ver.');
-  }).catch(error=>console.warn('Convites temporariamente indisponíveis, mas perfil já confirmado:',error));
+  // Convites sob demanda: apenas ao abrir Meus Desafios.
+  // O login não deve consultar o D1 novamente para atualizar um contador.
   return user;
  }catch(error){toast('⚠️ Não foi possível selecionar o perfil: '+error.message);return null;}
 }
@@ -1409,7 +1406,7 @@ async function startOnlineClient(){
    if(!online.user){try{await online.login(sessionId)}catch(err){console.warn('Não foi possível reconectar o aluno:',err);cmForgetStudent();return;}}
    identifiedPlayerId=sessionId;
    if(gearProgress.playerId!==sessionId)loadPlayerEquipment(sessionId);
-   else void syncEquipmentProgress(sessionId);
+   // Ao restaurar o mesmo perfil, usar o progresso já obtido.
    selectHouse(sessionId[0]);fillPlayer(sessionId);populateIdentityOptions();
    $('player').value=sessionId;$('player').disabled=true;updateMode();
    // A reconexão não deve retirar o aluno da tela que acabou de abrir.
@@ -1430,12 +1427,8 @@ async function startOnlineClient(){
     await loginStudent();
    }
   }
-  try{
-   const pendentes=await refreshInbox();
-   if(online.user&&pendentes.some(c=>c.recipient.id===online.user.id&&c.status==='PENDENTE')){
-    toast('🔔 Você foi desafiado! Abra Meus desafios quando quiser responder.');
-   }
-  }catch(error){console.warn('Convites temporariamente indisponíveis:',error)}
+  // A reconexão não consulta a caixa de desafios.
+  // Meus Desafios consulta o servidor quando o aluno abrir a tela.
   // Não abrir o painel por reconexão nem por parâmetros da URL.
   // Ranking apenas quando o aluno abrir o placar.
  }catch(error){
