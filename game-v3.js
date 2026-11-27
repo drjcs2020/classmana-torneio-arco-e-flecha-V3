@@ -1,11 +1,11 @@
-import {initScene} from './scene-v3.js?v=20261127-n4-flecha-curta-grossa';
+import {initScene} from './scene-v3.js?v=20261127-restaurado-pre-otimizacao';
 import {GEAR,GEAR_BY_ID,getGearLevel,isGearUnlocked} from './equipment-catalog.js?v=win-progress-linear-20261110';
 import {mountEquipmentInventory} from './equipment-inventory.js?v=arsenal-button-colors-20261111';
 import {CIRCUITS,LEVELS,targetMotion,mediumTwinTargets,obstacleBlocks,distanceDifficulty,flightSeconds} from './arena-difficulty.js?v=20261113-hard-slower-v6';
 import {arenaAudio} from './arena-audio.js?v=20261114-aplausos-final-v2';
 import {cinematics} from './classmana-cinematics.js?v=20261113-robo-resultado-v4';
 import {initAtmosphere} from './arena-atmosphere.js?v=20261113-shield-proportional-v6';
-import {online} from './online-client.js?v=20261127-sem-otimizacao-original';
+import {online} from './online-client.js?v=20261127-pre-otimizacao';
 import {mountSpriteHUD} from './sprite-hud.js?v=1';
 const $=id=>document.getElementById(id);
 function cmResetResultPresentation(){
@@ -1029,8 +1029,7 @@ async function finishMatch(){
     opponent:rival===null?'—':rival,mode:'duel',ownTotal:total,rivalTotal:rival===null?null:Number(rival)});
    $('share-help').textContent='✅ Resultado registrado no servidor do torneio.';
    $('hud-score').textContent=total;$('hud-rival').textContent=rival===null?'—':rival;
-   refreshInbox().catch(console.warn);
-   // O progresso já consulta as vitórias oficiais. O placar só atualiza ao abrir.
+   refreshInbox().catch(console.warn);renderRanking().catch(console.warn);
    void syncEquipmentProgress(current.playerId);
   }catch(error){
    if(match!==current)return;current.onlineSaveFailed=true;current.running=true;
@@ -1437,7 +1436,7 @@ async function startOnlineClient(){
    }
   }catch(error){console.warn('Convites temporariamente indisponíveis:',error)}
   // Não abrir o painel por reconexão nem por parâmetros da URL.
-  // Ranking apenas quando o aluno abrir o placar.
+  renderRanking();
  }catch(error){
   online.state='error';
   online.lastError=String(error?.message||'Falha de conexão');
@@ -1635,7 +1634,7 @@ $('cm-v2-home-exit')?.addEventListener('click',cmEndSession);
 $('cm-ranking-choice')?.addEventListener('click',()=>openView('ranking'));
 $('cm-open-challenges')?.addEventListener('click',()=>openInbox());
 document.querySelectorAll('[data-rank]').forEach(btn=>btn.addEventListener('click',()=>{
- scoreTab=btn.dataset.rank==='classes'?'classes':'players';cmRankMode(); // Alternar aba não refaz SQL.
+ scoreTab=btn.dataset.rank==='classes'?'classes':'players';cmRankMode();renderRanking();
 }));
 function toggleArenaPause(){
  if(!match?.running||match.locked||view!=='arena')return;
@@ -1729,10 +1728,19 @@ function restoreArena(){
 }
 if(document.body.dataset.page==='arena')restoreArena();
 else processLink();
-// Ranking não é consultado automaticamente na abertura.
+renderRanking();
 // O indicador de transição só desaparece após o restabelecimento da sessão.
  // Nenhuma etapa intermediária é exibida durante esse processo.
  startOnlineClient().finally(()=>{
   document.documentElement.classList.remove('cm-v2-resume-pending');
  });
-// Sem consulta periódica: o aluno só atualiza desafios ao agir.
+setInterval(async()=>{
+ if(!online.user||online.state!=='ready'||document.visibilityState==='hidden')return;
+ try{
+  const id=online.user.id;
+  const before=onlineInbox.filter(ch=>cmAlertable(ch,id)&&cmNoticeSnapshot[ch.id]!==cmNotificationState(ch)).length;
+  await refreshInbox();
+  const after=onlineInbox.filter(ch=>cmAlertable(ch,id)&&cmNoticeSnapshot[ch.id]!==cmNotificationState(ch)).length;
+  if(after>before)toast('🔔 Novidade no torneio! Abra Meus desafios para ver.');
+ }catch(error){console.warn('Atualização dos convites:',error)}
+},20000);
