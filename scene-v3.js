@@ -658,6 +658,17 @@ export function initScene(canvas, getSettings) {
     model.setLocalScale(spec.scale,spec.scale,spec.scale);
     model.setLocalPosition(...spec.offset);
     slim.addChild(model);
+    // Nível 5: a flecha original de precisão mantém tamanho, posição
+    // e rotação; somente a haste do GLB recebe acabamento preto.
+    // Object_3 corresponde à malha longitudinal (shaft) do arquivo.
+    if(equipment.bow==='recurvo'&&file==='arrow-precision.glb'){
+      const darkShaft=material('#14181d',{metal:.43,rough:.32});
+      for(const render of model.findComponents('render')){
+        if(render.entity.name==='Object_3'){
+          for(const instance of render.meshInstances)instance.material=darkShaft;
+        }
+      }
+    }
     return slim;
   }
   function selectedArrow(){
