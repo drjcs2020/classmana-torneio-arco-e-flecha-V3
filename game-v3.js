@@ -50,52 +50,86 @@ function saveEquipment(playerId=identifiedPlayerId){
  if(!/^[ABC]\d{2}$/.test(playerId||''))return;
  try{localStorage.setItem(GEAR_STORAGE_PREFIX+playerId,JSON.stringify(equipment))}catch{}
 }
+// Progresso confirmado por aluno: manter o último estado válido durante falhas de rede.
+// Esta cópia é apenas para exibição/equipamento; resultados oficiais continuam no D1.
+const VERIFIED_PROGRESS_PREFIX='classmana-torneio-verified-v1:';
+function readVerifiedProgress(playerId){
+ if(!/^[ABC]\d{2}$/.test(playerId||''))return null;
+ try{
+  const value=JSON.parse(localStorage.getItem(VERIFIED_PROGRESS_PREFIX+playerId)||'null');
+  return value&&Number.isSafeInteger(value.wins)&&value.wins>=0?value.wins:null;
+ }catch{return null}
+}
+function saveVerifiedProgress(playerId,wins){
+ if(!/^[ABC]\d{2}$/.test(playerId||'')||!Number.isSafeInteger(wins)||wins<0)return;
+ try{localStorage.setItem(VERIFIED_PROGRESS_PREFIX+playerId,JSON.stringify({wins,at:Date.now()}))}catch{}
+}
+function applyOfficialProgress(playerId,wins,fromServer){
+ if(!/^[ABC]\d{2}$/.test(playerId||'')||!Number.isSafeInteger(wins)||wins<0)return;
+ // Não aplicar resultado tardio de outro aluno.
+ const active=identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent();
+ if(active!==playerId)return;
+ if(fromServer)saveVerifiedProgress(playerId,wins);
+ gearProgress={wins,confirmed:true,playerId};
+ if(document.body.dataset.page==='lobby'){
+  const preferred=readEquipment(playerId).bow;
+  // Não sobrescrever a preferência persistida em uma falha de consulta.
+  equipment={bow:isGearUnlocked(preferred,wins)?preferred:'classico',arrow:'rubi'};
+  applyEquipment();
+ }
+ window.classmanaGearProgress={playerId,wins,level:getGearLevel(wins),confirmed:true,stale:!fromServer};
+ window.dispatchEvent(new Event('classmana:v2-lobby-session-changed'));
+ gearCarousel?.setProgress(gearProgress);
+}
 function loadPlayerEquipment(playerId){
  if(!/^[ABC]\d{2}$/.test(playerId||''))return;
- gearProgress={wins:0,confirmed:false,playerId};
- // Enquanto o placar não confirmar as vitórias, só o arco inicial fica ativo.
- equipment={bow:'classico',arrow:'rubi'};applyEquipment();
+ const cached=readVerifiedProgress(playerId);
+ gearProgress={wins:cached??0,confirmed:cached!==null,playerId};
+ const preferred=readEquipment(playerId).bow;
+ equipment={bow:cached!==null&&isGearUnlocked(preferred,cached)?preferred:'classico',arrow:'rubi'};
+ applyEquipment();
+ if(cached!==null){
+  window.classmanaGearProgress={playerId,wins:cached,level:getGearLevel(cached),confirmed:true,stale:true};
+  window.dispatchEvent(new Event('classmana:v2-lobby-session-changed'));
+ }
  void syncEquipmentProgress(playerId);
 }
-// Repetir apenas falhas transitórias sem cache, sem F5 e sem chamadas permanentes.
+// Uma requisição de ranking por aluno em voo. Não usar polling contínuo.
 const progressRequests=new Map();
 function syncEquipmentProgress(playerId){
  if(!/^[ABC]\d{2}$/.test(playerId||''))return Promise.resolve();
  if(progressRequests.has(playerId))return progressRequests.get(playerId);
  const pending=(async()=>{
-  const requested=playerId;
-  const belongs=()=>(identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent())===requested;
-  for(let attempt=0;attempt<4;attempt++){
-   if(!belongs())return;
-   if(attempt)await new Promise(resolve=>setTimeout(resolve,[0,900,1900,3500][attempt]));
-   if(!belongs())return;
+  const active=()=> (identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent())===playerId;
+  for(let attempt=0;attempt<3;attempt++){
+   if(!active())return;
+   if(attempt)await new Promise(resolve=>setTimeout(resolve,attempt*1200));
+   if(!active())return;
    try{
-    const ranking=await online.ranking(); // Sempre consulta diretamente a API oficial.
-    if(!belongs())return;
-    if(ranking?.ok!==true||!Array.isArray(ranking.players))throw Error('Ranking incompleto');
-    const row=ranking.players.find(p=>p.id===requested);
-    if(!row||!Number.isFinite(Number(row.wins)))throw Error('Nível do aluno ausente no ranking');
-    const wins=Math.max(0,Math.trunc(Number(row.wins)));
-    gearProgress={wins,confirmed:true,playerId:requested};
-    if(document.body.dataset.page==='lobby'){
-     const preferred=readEquipment(requested).bow;
-     equipment={bow:isGearUnlocked(preferred,wins)?preferred:'classico',arrow:'rubi'};
-     if(preferred!==equipment.bow)saveEquipment(requested);
-     applyEquipment();
-    }
-    window.classmanaGearProgress={playerId:requested,wins,level:getGearLevel(wins),confirmed:true};
-    window.dispatchEvent(new Event('classmana:v2-lobby-session-changed'));
-    gearCarousel?.setProgress(gearProgress);
+    const ranking=await online.ranking();
+    if(!active())return;
+    if(ranking?.ok!==true||!Array.isArray(ranking.players))throw Error('Ranking sem dados confirmados');
+    // A API retorna apenas jogadores com pelo menos uma partida concluída.
+    // Ausência na lista completa significa zero vitórias, não falha da consulta.
+    const row=ranking.players.find(p=>p.id===playerId);
+    if(row&&(!Number.isSafeInteger(Number(row.wins))||Number(row.wins)<0))
+     throw Error('Vitórias inválidas na resposta do ranking');
+    const wins=row?Number(row.wins):0;
+    applyOfficialProgress(playerId,wins,true);
+    // Os selos de nível podem reutilizar a mesma resposta sem fazer outra consulta.
+    window.classmanaLastOfficialRanking=ranking.players;
+    window.dispatchEvent(new Event('classmana:official-ranking-loaded'));
     return;
    }catch(error){
-    console.warn('[ClassMana] Tentativa de consulta do nível '+(attempt+1)+'/4:',error);
-    if(attempt===3&&belongs()){
-     // Uma falha de comunicação não zera vitórias já confirmadas na sessão.
-     if(gearProgress.playerId!==requested||!gearProgress.confirmed)
-      gearProgress={wins:0,confirmed:false,playerId:requested};
-     gearCarousel?.setProgress(gearProgress);
-    }
+    console.warn('[ClassMana] Consulta do nível '+(attempt+1)+'/3:',error);
    }
+  }
+  // Se a API falha, NÃO substituir vitórias anteriores por zero.
+  // Sem confirmação prévia, manter bloqueios oficiais até obter resposta válida.
+  if(active()){
+   const saved=readVerifiedProgress(playerId);
+   if(saved!==null)applyOfficialProgress(playerId,saved,false);
+   else gearCarousel?.setProgress(gearProgress);
   }
  })().finally(()=>{if(progressRequests.get(playerId)===pending)progressRequests.delete(playerId)});
  progressRequests.set(playerId,pending);
