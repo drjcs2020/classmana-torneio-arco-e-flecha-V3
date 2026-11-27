@@ -817,10 +817,7 @@ export function initScene(canvas, getSettings) {
       model.setLocalEulerAngles(...knownRotation);
       b=bounds();
     }
-    // O GLB do Explorador já possui o nó de normalização frontal
-    // ClassMana_Orientacao_Frontal_Centralizada. Corrigi-lo novamente
-    // por PCA na cena desfaz sua orientação original.
-    if(gear.type==='Arco'&&gear.id!=='explorador'){
+    if(gear.type==='Arco'){
       const longitudinal=bowLongAxis3D(model);
       if(longitudinal){
         const up=new pc.Vec3(0,1,0),dot=clamp(longitudinal.dot(up),-1,1);
@@ -928,13 +925,63 @@ export function initScene(canvas, getSettings) {
       parent.dataset.recurveSpanZ=spanZ.toFixed(4);
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='explorador'){
-      // GLB original já centralizado e voltado para a câmera.
-      // Não acrescentar giro fixo, PCA XZ ou quaternion no pivô:
-      // usar a orientação matriz do arquivo importado.
-      bowVisualPivot.addChild(model);
-      parent.dataset.explorerRotationMode='native-glb-front-facing';
-      parent.dataset.explorerBowYaw='0';
+      // Nível 6: a malha bow-ranger.glb.gz já passou pelo alinhamento
+      // longitudinal real (PCA 3D). Descobrir AGORA a direção lateral
+      // em XZ pelos vértices transformados do próprio GLB, não pelo print.
+      // Uma rotação em Y alinha a maior largura à tela (eixo X), sem
+      // alterar a vertical, a posição, a escala ou a flecha independente.
+      model.syncHierarchy();
+      const samples=[];
+      for(const render of model.findComponents('render')){
+        for(const inst of render.meshInstances||[]){
+          const mesh=inst.mesh,transform=inst.node?.getWorldTransform?.();
+          let found=false;
+          if(mesh&&transform&&typeof mesh.getPositions==='function'){
+            try{
+              const values=[];mesh.getPositions(values);
+              const step=Math.max(1,Math.ceil(values.length/3/250));
+              for(let i=0;i+2<values.length;i+=step*3){
+                const v=transform.transformPoint(
+                  new pc.Vec3(values[i],values[i+1],values[i+2]));
+                if(Number.isFinite(v.x)&&Number.isFinite(v.z)){
+                  samples.push([v.x,v.z]);found=true;
+                }
+              }
+            }catch(_error){/* Algumas malhas só disponibilizam AABB. */}
+          }
+          if(!found&&inst.aabb){
+            const box=inst.aabb;
+            for(const x of [-1,1])for(const z of [-1,1])
+              samples.push([
+                box.center.x+x*box.halfExtents.x,
+                box.center.z+z*box.halfExtents.z
+              ]);
+          }
+        }
+      }
+      let faceYaw=0;
+      if(samples.length>=3){
+        let mx=0,mz=0;
+        for(const [x,z] of samples){mx+=x;mz+=z}
+        mx/=samples.length;mz/=samples.length;
+        let xx=0,zz=0,xz=0;
+        for(const [x,z] of samples){
+          const dx=x-mx,dz=z-mz;
+          xx+=dx*dx;zz+=dz*dz;xz+=dx*dz;
+        }
+        // Direção principal transversal da malha projetada no plano XZ.
+        // atan2(2*xz,xx-zz)/2 dá o desvio relativo ao eixo X.
+        // Rotação Y positiva leva o vetor (X,Z) a (X',0).
+        if(xx+zz>1e-8)faceYaw=Math.atan2(2*xz,xx-zz)*90/Math.PI;
+      }
+      const visual=new pc.Entity('Arco Explorador nivel 6 - face pelo GLB');
+      visual.setLocalRotation(new pc.Quat().setFromAxisAngle(
+        new pc.Vec3(0,1,0),faceYaw+90));
+      bowVisualPivot.addChild(visual);
+      visual.addChild(model);
+      parent.dataset.explorerBowYaw=(faceYaw+90).toFixed(2);
       parent.dataset.explorerBowRoll='0';
+      parent.dataset.explorerRotationMode='glb-xz-pca-y-plus90';
       parent.dataset.windBowFaceYaw='0';
     }else{
       bowVisualPivot.addChild(model);
