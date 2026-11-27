@@ -115,7 +115,9 @@ function syncEquipmentProgress(playerId){
     if(row&&(!Number.isSafeInteger(Number(row.wins))||Number(row.wins)<0))
      throw Error('Vitórias inválidas na resposta do ranking');
     const wins=row?Number(row.wins):0;
-    applyOfficialProgress(playerId,wins,true);
+    // Uma cópia recuperada NÃO é confirmação nova do servidor.
+    // Ela continua identificada como dados anteriores no inventário.
+    applyOfficialProgress(playerId,wins,!ranking.stale);
     // Os selos de nível podem reutilizar a mesma resposta sem fazer outra consulta.
     window.classmanaLastOfficialRanking=ranking.players;
     window.dispatchEvent(new Event('classmana:official-ranking-loaded'));
@@ -703,7 +705,7 @@ async function startMatch(accepted=null){
     return;
   }
   /* API direta: o duelo acontece no GitHub Pages, sem portal Apps Script. */
-  if(!online.enabled||online.state!=='ready'){toast('⚠️ '+(online.lastError||'A Arena Online não conseguiu conectar ao Railway V2.'));return}
+  if(!online.enabled){toast('⚠️ A API de duelos não está configurada.');return}
   if(!online.user||online.user.id!==userId){
     const selected=await loginStudent();
     if(!selected)return;
@@ -1155,7 +1157,12 @@ async function renderRanking(){
  try{
   const data=await online.ranking();
   const matches=Number(data.games)||0,allClasses=Array.isArray(data.classes)?data.classes:[],allPlayers=Array.isArray(data.players)?data.players:[];
-  status.textContent='🏆 '+matches+' duelos concluídos · Atualizado às '+new Date().toLocaleTimeString('pt-BR');
+  // A mesma classificação alimenta os selos de nível, sem nova consulta.
+  window.classmanaLastOfficialRanking=allPlayers;
+  window.dispatchEvent(new Event('classmana:official-ranking-loaded'));
+  status.textContent=data.stale
+   ?'⚠️ Último ranking oficial salvo · API indisponível agora · '+new Date(data.cachedAt).toLocaleString('pt-BR')
+   :'🏆 '+matches+' duelos concluídos · Atualizado às '+new Date().toLocaleTimeString('pt-BR');
   const assets='assets/ui/ranking-v2/elementos/';
   const medals=['medalha_1_ouro.png','medalha_2_prata.png','medalha_3_bronze.png'];
   const medalImg=i=>i<3?'<img class="cm-rank-medal" src="'+assets+medals[i]+'" alt="'+(i+1)+'º lugar">':'<span class="cm-rank-place">'+(i+1)+'º</span>';
@@ -1220,9 +1227,11 @@ async function loginStudent(){
  const id=$('player').value;
  if(identifiedPlayerId&&id!==identifiedPlayerId){toast('Este jogador não é o da sessão atual.');return null;}
  if(!id||id==='guest'){toast('Escolha seu nome na lista.');return null;}
- if(!online.enabled||online.state!=='ready'){toast('⚠️ '+(online.lastError||'Aguardando atualização do servidor de desafios.'));return null;}
+ if(!online.enabled){toast('⚠️ A API de duelos não está configurada.');return null;}
  if(online.user?.id===id)return online.user;
  try{
+  // A falha anterior do ping não deve bloquear um novo login para sempre.
+  if(online.state!=='ready')await online.connect();
   const user=await online.login(id);
   identifiedPlayerId=user.id;cmSaveStudent(user.id);
   if(document.body.dataset.page==='lobby'&&gearProgress.playerId!==user.id)loadPlayerEquipment(user.id);
@@ -1466,7 +1475,12 @@ async function startOnlineClient(){
     }
     // Não esquecer a identidade do aluno por falha temporária de conexão.
     // A sessão local continua disponível para uma nova tentativa.
-    if(!online.user){online.lastError='Não foi possível reconectar o aluno. A sessão foi preservada.';showOnlineStatus();return;}
+    if(!online.user){
+     online.lastError='Não foi possível reconectar o aluno. A sessão foi preservada.';
+     showOnlineStatus();
+     // Não interromper a montagem do ranking e da tela por falha no login.
+     // Duelos persistentes continuam exigindo autenticação oficial.
+    }
    }
    identifiedPlayerId=sessionId;
    if(gearProgress.playerId!==sessionId)loadPlayerEquipment(sessionId);
