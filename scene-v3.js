@@ -924,6 +924,22 @@ export function initScene(canvas, getSettings) {
       parent.dataset.recurveSpanX=spanX.toFixed(4);
       parent.dataset.recurveSpanZ=spanZ.toFixed(4);
       parent.dataset.windBowFaceYaw='0';
+    }else if(gear.id==='explorador'){
+      // Nível 6: a rotação longitudinal já foi calibrada a partir da
+      // geometria original de bow-ranger.glb.gz em bowLongAxis3D().
+      // A captura mostra as extremidades verticais, mas a face de perfil.
+      // Reutilizar APENAS o giro de face bem-sucedido no nível 5:
+      // quaternion em torno do eixo Y do pai, sem roll Z adicional.
+      // Flecha, mira e trajetória são irmãos deste pivô, não filhos.
+      const visual=new pc.Entity('Arco Explorador nivel 6 - face vertical');
+      const facingRotation=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,1,0),90);
+      visual.setLocalRotation(facingRotation);
+      bowVisualPivot.addChild(visual);
+      visual.addChild(model);
+      parent.dataset.explorerBowYaw='90';
+      parent.dataset.explorerBowRoll='0';
+      parent.dataset.explorerRotationMode='parent-y-quaternion';
+      parent.dataset.windBowFaceYaw='0';
     }else{
       bowVisualPivot.addChild(model);
       parent.dataset.windBowFaceYaw='0';
