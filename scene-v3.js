@@ -849,6 +849,17 @@ export function initScene(canvas, getSettings) {
       bowVisualPivot.addChild(windFacing);
       windFacing.addChild(model);
       parent.dataset.windBowFaceYaw='90';
+    }else if(gear.id==='recurvo'){
+      // SOMENTE NÍVEL 5 (Arco Recurvo): o GLB aparece de costas e
+      // tombado na tela. Corrigir Y/Z depois do alinhamento de eixo longo,
+      // sem girar WeaponPivot, mira ou flecha.
+      const recurveFacing=new pc.Entity('Arco Recurvo nivel 5 - face Y 180 roll Z 50');
+      recurveFacing.setLocalEulerAngles(0,180,50);
+      bowVisualPivot.addChild(recurveFacing);
+      recurveFacing.addChild(model);
+      parent.dataset.recurveBowYaw='180';
+      parent.dataset.recurveBowRoll='50';
+      parent.dataset.windBowFaceYaw='0';
     }else{
       bowVisualPivot.addChild(model);
       parent.dataset.windBowFaceYaw='0';
