@@ -136,7 +136,7 @@ if(document.body.dataset.page==='arena'&&cmNavigationType==='reload'){
 const rand=(a,b)=>a+Math.random()*(b-a);
 function safeRead(){try{const a=JSON.parse(localStorage.getItem('classmana-archery-v2-isolated'));return Array.isArray(a)?a.filter(x=>x&&typeof x==='object').slice(-150):[]}catch{return []}}
 storage=safeRead();
-function persist(row){storage.push({...row,at:new Date().toISOString()});storage=storage.slice(-150);try{localStorage.setItem('classmana-archery-v2-isolated',JSON.stringify(storage))}catch{} // Treino local não consulta ranking oficial}
+function persist(row){storage.push({...row,at:new Date().toISOString()});storage=storage.slice(-150);try{localStorage.setItem('classmana-archery-v2-isolated',JSON.stringify(storage))}catch{} } // Treino local não consulta ranking oficial
 function toast(s){const t=$('toast');t.textContent=s;t.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove('show'),3100)}
 // Reentrada direta sem escolher novamente a Casa ou confirmar o aluno.
 function cmOpenActiveLobbyStep(step){
