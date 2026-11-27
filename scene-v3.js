@@ -635,10 +635,10 @@ export function initScene(canvas, getSettings) {
     // Nunca calcular escala por AABB runtime: o arquivo standard possui
     // rotação e escala internas, e essa medição produzia uma tora gigante.
     const slim=new pc.Entity('Arrow calibrated shaft');
-    // Níveis 1, 2, 3 e 4 preservam suas escalas; o nível 5 usa escala visível.
-    // O nível 4 preserva sua calibração. O nível 5 não deve reduzir a flecha a 18%.
+    // Níveis 1, 2, 3 e 5 preservam suas escalas atuais.
+    // Somente nível 4: aumentar 35% a flecha (0.18 * 1.35 = 0.243).
     // Sem alterar trajetória, flechas dos demais níveis ou WeaponPivot.
-    const factor=equipment.bow==='lendario'?.243:equipment.bow==='recurvo'?1:1;
+    const factor=equipment.bow==='lendario'?.243:equipment.bow==='recurvo'?.18:1;
     // Exclusivamente a flecha do nível 4: a calibração X/Y anterior
     // alongou a malha visual ao invés de engrossar sua haste.
     // Encurtar X/Y em 40% em relação ao último ajuste e engrossar
@@ -892,12 +892,10 @@ export function initScene(canvas, getSettings) {
       // suporte visual ~65° no plano XY alinha as pontas à vertical.
       // Não girar a flecha/mira: são irmãos deste nó, e não seus filhos.
       const visual=new pc.Entity('Arco Recurvo nivel 5 - alinhamento vertical');
-      // Girar apenas o arco em Y para mostrar a face ao jogador.
-      // Manter a correção Z que deixou o arco vertical na última imagem.
-      visual.setLocalEulerAngles(0,90,-65);
+      visual.setLocalEulerAngles(0,0,-65);
       bowVisualPivot.addChild(visual);
       visual.addChild(model);
-      parent.dataset.recurveBowYaw='90';
+      parent.dataset.recurveBowYaw='0';
       parent.dataset.recurveBowRoll='-65';
       parent.dataset.windBowFaceYaw='0';
     }else{
