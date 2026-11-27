@@ -104,7 +104,18 @@ const watch=()=>{
  });
  observer.observe(document.body,{subtree:true,childList:true});
  document.addEventListener('change',schedule);
- window.addEventListener('classmana:v2-lobby-session-changed',()=>{schedule();void refresh()});
+ window.addEventListener('classmana:v2-lobby-session-changed',()=>{
+  // O ranking do cliente principal já confirmou as vitórias deste aluno.
+  // Reutilizar a confirmação em vez de depender de outra requisição,
+  // inclusive quando a segunda consulta falhar.
+  const progress=window.classmanaGearProgress;
+  if(progress?.confirmed&&valid(progress.playerId)&&Number.isFinite(Number(progress.wins))){
+   if(!official)official=new Map();
+   official.set(progress.playerId,Math.max(0,Number(progress.wins)));
+  }
+  schedule();
+  if(!progress?.confirmed)void refresh();
+ });
  document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule()});
  document.addEventListener('click',event=>{
   if(event.target.closest?.('[data-play-mode],#cm-draw-roll,#cm-open-challenges,[data-v2-action="desafios"],#cm-same-open-rivals')){schedule();void refresh()}
