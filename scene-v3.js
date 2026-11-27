@@ -887,13 +887,16 @@ export function initScene(canvas, getSettings) {
       parent.dataset.legendBowRoll='0';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='recurvo'){
-      // Nível 5 permanece exatamente na calibração anterior.
-      const visual=new pc.Entity('Arco alinhado pelo eixo longitudinal');
-      visual.setLocalEulerAngles(0,0,0);
+      // Nível 5, exclusivamente: na captura de referência a haste do
+      // Arco Recurvo sobe em diagonal (~25° da horizontal). Girar o
+      // suporte visual ~65° no plano XY alinha as pontas à vertical.
+      // Não girar a flecha/mira: são irmãos deste nó, e não seus filhos.
+      const visual=new pc.Entity('Arco Recurvo nivel 5 - alinhamento vertical');
+      visual.setLocalEulerAngles(0,0,-65);
       bowVisualPivot.addChild(visual);
       visual.addChild(model);
       parent.dataset.recurveBowYaw='0';
-      parent.dataset.recurveBowRoll='0';
+      parent.dataset.recurveBowRoll='-65';
       parent.dataset.windBowFaceYaw='0';
     }else{
       bowVisualPivot.addChild(model);
