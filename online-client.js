@@ -9,7 +9,6 @@ class Online {
   this.token=sessionStorage.getItem(KEY)||'';
   // Evita várias leituras idênticas do D1 por ranking, arsenal e níveis.
   this.rankData=null;this.rankAt=0;this.rankPending=null;
-  this.inboxData=null;this.inboxAt=0;this.inboxPending=null;this.rosterPending=null;
   this.user=null;this.roster=[];this.state='off';this.lastError=null;this.gatewayReady=true;this.apiVersion=0;
  }
  async request(action,method='GET',payload={},requestId){
@@ -37,30 +36,13 @@ class Online {
   }catch(e){this.state='error';this.lastError=e.message;throw e}
  }
  async login(id){if(!/^[ABC]\d{2}$/.test(id||''))throw Error('Escolha seu perfil.');const r=await this.post('login',{id});
-  this.invalidateInbox();
   this.token=r.token;this.user=r.user;sessionStorage.setItem(KEY,this.token);localStorage.setItem('cm_arco_nome_v2',id);return this.user}
- logout(){this.token='';this.user=null;this.invalidateInbox();sessionStorage.removeItem(KEY);localStorage.removeItem('cm_arco_nome_v2')}
- async list(){
-  if(this.rosterPending)return this.rosterPending;
-  const pending=this.get('roster').then(d=>{this.roster=d.players||[];return this.roster}).finally(()=>{if(this.rosterPending===pending)this.rosterPending=null});
-  this.rosterPending=pending;return pending;
- }
- async inbox(){
-  if(!this.user)throw Error('Escolha seu perfil.');
-  if(this.inboxData&&Date.now()-this.inboxAt<10000)return this.inboxData;
-  if(this.inboxPending)return this.inboxPending;
-  const player=this.user.id;
-  const pending=this.get('inbox').then(d=>{
-   const rows=d.challenges||[];
-   if(this.user?.id===player){this.inboxData=rows;this.inboxAt=Date.now()}
-   return rows;
-  }).finally(()=>{if(this.inboxPending===pending)this.inboxPending=null});
-  this.inboxPending=pending;return pending;
- }
- invalidateInbox(){this.inboxData=null;this.inboxAt=0;this.inboxPending=null}
- async create(kind,to,level='iniciante'){const d=await this.post('challenge',{kind,to,level});this.invalidateInbox();return d.challenge}
- async answer(id,decision){const d=await this.post('answer',{id,decision});this.invalidateInbox();return d.challenge}
- async submit(id,shots){const result=await this.post('submit',{id,shots});this.invalidateRanking();this.invalidateInbox();return result}
+ logout(){this.token='';this.user=null;sessionStorage.removeItem(KEY);localStorage.removeItem('cm_arco_nome_v2')}
+ async list(){const d=await this.get('roster');this.roster=d.players||[];return this.roster}
+ async inbox(){if(!this.user)throw Error('Escolha seu perfil.');return(await this.get('inbox')).challenges||[]}
+ async create(kind,to,level='iniciante'){return(await this.post('challenge',{kind,to,level})).challenge}
+ async answer(id,decision){return(await this.post('answer',{id,decision})).challenge}
+ async submit(id,shots){const result=await this.post('submit',{id,shots});this.invalidateRanking();return result}
  async challenge(id){return(await this.get('challenge',{id})).challenge}
  ranking({fresh=false}={}){
   const now=Date.now();
