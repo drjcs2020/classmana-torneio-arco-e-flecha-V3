@@ -909,11 +909,18 @@ export function initScene(canvas, getSettings) {
       const faceTurn=Number.isFinite(spanX)&&Number.isFinite(spanZ)&&
         spanZ>spanX*1.25?90:0;
       const visual=new pc.Entity('Arco Recurvo nivel 5 - orientação pela malha GLB');
-      visual.setLocalEulerAngles(0,faceTurn,-65);
+      // Preservar a rotação vertical já confirmada (Z=-65).
+      // Aplicar a rotação de face em torno do Y do PAI (vertical da cena),
+      // por multiplicação de quaternions: Qface * Qvertical.
+      // Não usar Euler (0, faceTurn+90, -65): misturava os eixos e tombava o arco.
+      const verticalRotation=new pc.Quat().setFromEulerAngles(0,faceTurn,-65);
+      const facingRotation=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,1,0),90);
+      visual.setLocalRotation(facingRotation.mul(verticalRotation));
       bowVisualPivot.addChild(visual);
       visual.addChild(model);
-      parent.dataset.recurveBowYaw=String(faceTurn);
+      parent.dataset.recurveBowYaw=String(faceTurn+90);
       parent.dataset.recurveBowRoll='-65';
+      parent.dataset.recurveRotationMode='parent-y-quaternion';
       parent.dataset.recurveSpanX=spanX.toFixed(4);
       parent.dataset.recurveSpanZ=spanZ.toFixed(4);
       parent.dataset.windBowFaceYaw='0';
