@@ -1034,6 +1034,11 @@ export function initScene(canvas, getSettings) {
       return {x:-.16,y:.01,z:.13,yaw:0};
     if(equipment.bow==='lendario')
       return {x:.015,y:LEGENDARY_ARROW_Y_OFFSET,z:.13,yaw:0};
+    // Exclusivamente nível 7: elevar a flecha ao encaixe do arco de Aloy.
+    // Mesmo deslocamento vertical já calibrado no nível 4; sem mexer
+    // em X, Z, orientação, escala ou no modelo do arco.
+    if(equipment.bow==='aloy')
+      return {x:.015,y:LEGENDARY_ARROW_Y_OFFSET,z:.13,yaw:0};
     return {x:.015,y:0,z:.13,yaw:0};
   }
   function updateBowAim(){
