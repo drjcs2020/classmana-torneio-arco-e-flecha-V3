@@ -5,7 +5,7 @@ import {CIRCUITS,LEVELS,targetMotion,mediumTwinTargets,obstacleBlocks,distanceDi
 import {arenaAudio} from './arena-audio.js?v=20261114-aplausos-final-v2';
 import {cinematics} from './classmana-cinematics.js?v=20261113-robo-resultado-v4';
 import {initAtmosphere} from './arena-atmosphere.js?v=20261113-shield-proportional-v6';
-import {online} from './online-client.js?v=20261127-desafios-sob-demanda';
+import {online} from './online-client.js?v=20261127-rollback-consultas';
 import {mountSpriteHUD} from './sprite-hud.js?v=1';
 const $=id=>document.getElementById(id);
 function cmResetResultPresentation(){
@@ -64,8 +64,7 @@ async function syncEquipmentProgress(playerId){
   const ranking=await online.ranking();
   if((identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent())!==requested)return;
   const row=(ranking.players||[]).find(p=>p.id===requested);
-  if(!row||!Number.isFinite(Number(row.wins)))throw Error('Aluno ainda não encontrado no ranking oficial.');
-  const wins=Math.max(0,Number(row.wins));
+  const wins=Math.max(0,Number(row?.wins)||0);
   gearProgress={wins,confirmed:true,playerId:requested};
   if(document.body.dataset.page==='lobby'){
    const preferred=readEquipment(requested).bow;
@@ -77,10 +76,8 @@ async function syncEquipmentProgress(playerId){
   window.dispatchEvent(new Event('classmana:v2-lobby-session-changed'));
  }catch(error){
   if((identifiedPlayerId||cmSessionId()||cmStoredLobbyStudent())!==requested)return;
-  // Não transformar erro de rede ou resposta incompleta em perda de vitórias.
-  // Nem substituir a preferência de arco armazenada para o aluno.
-  if(gearProgress.playerId!==requested||!gearProgress.confirmed)
-   gearProgress={wins:0,confirmed:false,playerId:requested};
+  gearProgress={wins:0,confirmed:false,playerId:requested};
+  if(document.body.dataset.page==='lobby'){equipment={bow:'classico',arrow:'rubi'};applyEquipment();}
   console.warn('[ClassMana] Vitórias ainda não verificadas:',error);
  }
  gearCarousel?.setProgress(gearProgress);
@@ -139,7 +136,7 @@ if(document.body.dataset.page==='arena'&&cmNavigationType==='reload'){
 const rand=(a,b)=>a+Math.random()*(b-a);
 function safeRead(){try{const a=JSON.parse(localStorage.getItem('classmana-archery-v2-isolated'));return Array.isArray(a)?a.filter(x=>x&&typeof x==='object').slice(-150):[]}catch{return []}}
 storage=safeRead();
-function persist(row){storage.push({...row,at:new Date().toISOString()});storage=storage.slice(-150);try{localStorage.setItem('classmana-archery-v2-isolated',JSON.stringify(storage))}catch{} } // Treino local não consulta ranking oficial
+function persist(row){storage.push({...row,at:new Date().toISOString()});storage=storage.slice(-150);try{localStorage.setItem('classmana-archery-v2-isolated',JSON.stringify(storage))}catch{}renderRanking()}
 function toast(s){const t=$('toast');t.textContent=s;t.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove('show'),3100)}
 // Reentrada direta sem escolher novamente a Casa ou confirmar o aluno.
 function cmOpenActiveLobbyStep(step){
@@ -149,9 +146,7 @@ function cmOpenActiveLobbyStep(step){
  if(!id||(identifiedPlayerId&&identifiedPlayerId!==id)||(online.user&&online.user.id!==id))return false;
  identifiedPlayerId=id;
  if(cmSessionId()!==id||cmStoredLobbyStudent()!==id)cmSaveStudent(id);
- if(gearProgress.playerId!==id)loadPlayerEquipment(id);
- else if(!gearProgress.confirmed)void syncEquipmentProgress(id);
- // Revalidar apenas quando a consulta anterior não confirmou as vitórias.
+ if(gearProgress.playerId!==id)loadPlayerEquipment(id);else void syncEquipmentProgress(id);
  selectHouse(id[0]);
  fillPlayer(id);
  $('player').value=id;$('player').disabled=true;
@@ -1184,8 +1179,12 @@ async function loginStudent(){
   // A confirmação do perfil libera imediatamente a partida; a caixa
   // de convites não pode travar o botão Iniciar por demora do Google.
   toast('✅ Perfil confirmado. Você já pode jogar.');
-  // Convites sob demanda: apenas ao abrir Meus Desafios.
-  // O login não deve consultar o D1 novamente para atualizar um contador.
+  // Atualizar o contador sem abrir a caixa de desafios automaticamente.
+  void refreshInbox().then(rows=>{
+   if(online.user?.id!==user.id)return;
+   const pending=rows.filter(c=>c.recipient.id===user.id&&c.status==='PENDENTE').length;
+   if(pending)toast('🔔 Você recebeu '+pending+' desafio(s)! Abra Meus desafios para ver.');
+  }).catch(error=>console.warn('Convites temporariamente indisponíveis, mas perfil já confirmado:',error));
   return user;
  }catch(error){toast('⚠️ Não foi possível selecionar o perfil: '+error.message);return null;}
 }
@@ -1410,8 +1409,7 @@ async function startOnlineClient(){
    if(!online.user){try{await online.login(sessionId)}catch(err){console.warn('Não foi possível reconectar o aluno:',err);cmForgetStudent();return;}}
    identifiedPlayerId=sessionId;
    if(gearProgress.playerId!==sessionId)loadPlayerEquipment(sessionId);
-   else if(!gearProgress.confirmed)void syncEquipmentProgress(sessionId);
-   // Ao reconectar, revalidar apenas se o progresso não estiver confirmado.
+   else void syncEquipmentProgress(sessionId);
    selectHouse(sessionId[0]);fillPlayer(sessionId);populateIdentityOptions();
    $('player').value=sessionId;$('player').disabled=true;updateMode();
    // A reconexão não deve retirar o aluno da tela que acabou de abrir.
@@ -1432,8 +1430,12 @@ async function startOnlineClient(){
     await loginStudent();
    }
   }
-  // A reconexão não consulta a caixa de desafios.
-  // Meus Desafios consulta o servidor quando o aluno abrir a tela.
+  try{
+   const pendentes=await refreshInbox();
+   if(online.user&&pendentes.some(c=>c.recipient.id===online.user.id&&c.status==='PENDENTE')){
+    toast('🔔 Você foi desafiado! Abra Meus desafios quando quiser responder.');
+   }
+  }catch(error){console.warn('Convites temporariamente indisponíveis:',error)}
   // Não abrir o painel por reconexão nem por parâmetros da URL.
   // Ranking apenas quando o aluno abrir o placar.
  }catch(error){
