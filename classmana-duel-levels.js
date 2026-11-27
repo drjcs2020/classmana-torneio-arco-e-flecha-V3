@@ -67,16 +67,9 @@ async function refresh(){
  if(loading||Date.now()-requestTime<30000)return;
  loading=true;requestTime=Date.now();
  try{
-  // Reutiliza a consulta recente do ranking oficial quando o módulo principal já estiver pronto.
-  // Em páginas isoladas, consulta diretamente somente após interação do usuário.
-  let data;
-  if(typeof window.classmanaGetRanking==='function'){
-   data=await window.classmanaGetRanking();
-  }else{
-   const response=await fetch(API,{cache:'no-store',mode:'cors'});
-   if(!response.ok)throw Error('Ranking temporariamente indisponível');
-   data=await response.json();
-  }
+  const response=await fetch(API,{cache:'no-store',mode:'cors'});
+  if(!response.ok)throw Error('Ranking temporariamente indisponível');
+  const data=await response.json();
   if(!data.ok||!Array.isArray(data.players))throw Error('Ranking não confirmado');
   official=new Map(data.players.filter(p=>valid(p.id)).map(p=>[p.id,Math.max(0,Number(p.wins)||0)]));
   schedule();
@@ -105,11 +98,11 @@ const watch=()=>{
  observer.observe(document.body,{subtree:true,childList:true});
  document.addEventListener('change',schedule);
  window.addEventListener('classmana:v2-lobby-session-changed',()=>{schedule();void refresh()});
- document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule()});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden){schedule();void refresh()}});
  document.addEventListener('click',event=>{
   if(event.target.closest?.('[data-play-mode],#cm-draw-roll,#cm-open-challenges,[data-v2-action="desafios"],#cm-same-open-rivals')){schedule();void refresh()}
  },true);
- schedule(); // Níveis serão buscados ao entrar com o aluno ou abrir os desafios.
+ schedule();void refresh();
 };
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',watch,{once:true});else watch();
 })();
