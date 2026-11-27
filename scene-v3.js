@@ -663,45 +663,12 @@ export function initScene(canvas, getSettings) {
   function selectedArrow(){
     return (GEAR_BY_ID[equipment.bow]||GEAR_BY_ID.classico).arrow;
   }
-  // Centraliza a flecha do nível 4 pela posição real dos dois GLBs,
-  // com os dois carregados. O deslocamento é feito APENAS no eixo Y do encaixe.
-  function alignLegendaryArrowToBow(owner){
-    if(equipment.bow!=='lendario'||!owner.__mesh3d||!arrowLoaded?.__mesh3d)return;
-    const midpointY=entity=>{
-      entity.syncHierarchy();
-      let min=Infinity,max=-Infinity;
-      for(const render of entity.findComponents('render')){
-        for(const inst of render.meshInstances||[]){
-          const bb=inst.aabb;
-          if(!bb)continue;
-          for(const sign of [-1,1]){
-            const p=new pc.Vec3(bb.center.x,bb.center.y+sign*bb.halfExtents.y,bb.center.z);
-            const y=bowRoot.worldToLocal(p).y;
-            min=Math.min(min,y);max=Math.max(max,y);
-          }
-        }
-      }
-      return Number.isFinite(min)&&Number.isFinite(max)?(min+max)*.5:null;
-    };
-    bowRoot.syncHierarchy();
-    const bowMid=midpointY(owner.__mesh3d);
-    const arrowMid=midpointY(arrowLoaded.__mesh3d);
-    if(bowMid===null||arrowMid===null)return;
-    // A flecha tinha seu ponto médio abaixo da metade do arco. Sem limite
-    // de 1.25 unidade: esse teto impedia a correção quando o GLB é deslocado.
-    legendaryArrowLift+=bowMid-arrowMid;
-    const nock=arrowNockPose();
-    arrowLoaded.setLocalPosition(nock.x,nock.y,nock.z);
-    bowRoot.syncHierarchy();
-    parent.dataset.legendArrowCenter='aligned';
-  }
   // Só revelar a arma quando arco E flecha GLB terminarem de carregar.
   function revealLoadedWeapon(owner){
     if(owner!==bowRoot||!owner.__bowLoaded||!owner.__arrowLoaded)return;
     for(const child of owner.__fallbacks||[])
       child.enabled=owner.__bowFailed||child===arrowLoaded||child===sightAnchor;
     owner.enabled=true;
-    alignLegendaryArrowToBow(owner);
     updateBowAim();
     parent.dataset.weaponPose='v1-mechanics-arrow-grip-lowered-007-v13';
     parent.dataset.glbBow=owner.__bowFailed?'fallback':'ready';
@@ -941,7 +908,6 @@ export function initScene(canvas, getSettings) {
   function loadBowModel(){
     const owner=bowRoot,id=equipment.bow,gear=GEAR_BY_ID[id]||GEAR_BY_ID.classico;
     if(!owner)return;
-    if(id==='lendario')legendaryArrowLift=0;
     const token=owner.__bowLoadToken=(owner.__bowLoadToken||0)+1;
     owner.enabled=false;
     owner.__bowLoaded=false;owner.__arrowLoaded=false;
@@ -963,9 +929,10 @@ export function initScene(canvas, getSettings) {
     });
   }
 
-  // Somente nível 4: elevação visual para alinhar o centro da flecha ao centro do arco.
-  // O valor é recalculado a partir da geometria do GLB; outros níveis usam a pose anterior.
-  let legendaryArrowLift=0;
+  // Exclusivo do Arco Lendário (nível 4): subir o encaixe da flecha
+  // no eixo vertical PlayCanvas +Y. Sem alteração de X, Z, giro ou escala.
+  // Usa altura fixa para não depender da leitura AABB do modelo 3D.
+  const LEGENDARY_ARROW_Y_OFFSET=1.05;
   function arrowNockPose(){
     if(GEAR_BY_ID[equipment.bow]?.type==='Besta')
       return {x:0,y:.08,z:.12,yaw:0};
@@ -978,7 +945,7 @@ export function initScene(canvas, getSettings) {
     if(equipment.bow==='classico')
       return {x:-.16,y:.01,z:.13,yaw:0};
     if(equipment.bow==='lendario')
-      return {x:.015,y:legendaryArrowLift,z:.13,yaw:0};
+      return {x:.015,y:LEGENDARY_ARROW_Y_OFFSET,z:.13,yaw:0};
     return {x:.015,y:0,z:.13,yaw:0};
   }
   function updateBowAim(){
