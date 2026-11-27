@@ -641,6 +641,10 @@ export function initScene(canvas, getSettings) {
     const smallArrow=equipment.bow==='lendario'||equipment.bow==='recurvo';
     const factor=smallArrow?.18:1;
     slim.setLocalScale(spec.width*5*factor,spec.width*5*factor,1.02*factor);
+    // SOMENTE arco nível 4: girar a flecha +90° ao redor de X,
+    // para orientar seu comprimento no sentido da profundidade.
+    // Não mudar a física do projétil nem as flechas de outros arcos.
+    if(equipment.bow==='lendario')slim.setLocalEulerAngles(90,0,0);
     parentEntity.addChild(slim);
     model.setLocalEulerAngles(...spec.rot);
     model.setLocalScale(spec.scale,spec.scale,spec.scale);
@@ -852,21 +856,27 @@ export function initScene(canvas, getSettings) {
       bowVisualPivot.addChild(windFacing);
       windFacing.addChild(model);
       parent.dataset.windBowFaceYaw='90';
-    }else if(gear.id==='lendario'||gear.id==='recurvo'){
-      // Níveis 4 e 5: seguir a mesma orientação do modelo 1/2/3.
-      // fitWeaponModel já alinhou o eixo longitudinal do arco com +Y.
-      // Não adicionar uma segunda rotação arbitrária em X/Y/Z,
-      // pois ela deitava os modelos e/ou os deixava de perfil.
-      const visual=new pc.Entity('Arco alinhado pelo eixo longitudinal');
-      visual.setLocalEulerAngles(0,0,0);
-      visual.setLocalScale(gear.id==='lendario'?.75:1,gear.id==='lendario'?.75:1,gear.id==='lendario'?.75:1);
+    }else if(gear.id==='lendario'){
+      // Nível 4: após o alinhamento vertical do modelo, corrigir somente
+      // a face por giro de +90° no eixo Y (vertical do PlayCanvas).
+      // A flecha é outro nó e não herda a rotação do arco.
+      const visual=new pc.Entity('Arco lendario - face Y +90');
+      visual.setLocalEulerAngles(0,90,0);
+      visual.setLocalScale(.75,.75,.75);
       bowVisualPivot.addChild(visual);
       visual.addChild(model);
-      parent.dataset.windBowFaceYaw='0';
-      parent.dataset.legendBowYaw='0';
+      parent.dataset.legendBowYaw='90';
       parent.dataset.legendBowRoll='0';
+      parent.dataset.windBowFaceYaw='0';
+    }else if(gear.id==='recurvo'){
+      // Nível 5 permanece exatamente na calibração anterior.
+      const visual=new pc.Entity('Arco alinhado pelo eixo longitudinal');
+      visual.setLocalEulerAngles(0,0,0);
+      bowVisualPivot.addChild(visual);
+      visual.addChild(model);
       parent.dataset.recurveBowYaw='0';
       parent.dataset.recurveBowRoll='0';
+      parent.dataset.windBowFaceYaw='0';
     }else{
       bowVisualPivot.addChild(model);
       parent.dataset.windBowFaceYaw='0';
