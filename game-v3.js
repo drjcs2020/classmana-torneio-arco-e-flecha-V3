@@ -1424,7 +1424,16 @@ async function startOnlineClient(){
   // Initial identity is already cleared synchronously at module start.
   // Never force the lobby back to Casa after a student has begun choosing a character.
   if(document.body.dataset.page==='lobby'&&/^[ABC][0-9]{2}$/.test(sessionId)&&(!online.user||online.user.id===sessionId)){
-   if(!online.user){try{await online.login(sessionId)}catch(err){console.warn('Não foi possível reconectar o aluno:',err);cmForgetStudent();return;}}
+   if(!online.user){
+    for(let attempt=0;attempt<3&&!online.user;attempt++){
+     if(attempt)await new Promise(resolve=>setTimeout(resolve,1000*attempt));
+     try{await online.login(sessionId)}
+     catch(err){console.warn('[ClassMana] Reconexão do aluno '+(attempt+1)+'/3:',err)}
+    }
+    // Não esquecer a identidade do aluno por falha temporária de conexão.
+    // A sessão local continua disponível para uma nova tentativa.
+    if(!online.user){online.lastError='Não foi possível reconectar o aluno. A sessão foi preservada.';showOnlineStatus();return;}
+   }
    identifiedPlayerId=sessionId;
    if(gearProgress.playerId!==sessionId)loadPlayerEquipment(sessionId);
    else void syncEquipmentProgress(sessionId);
