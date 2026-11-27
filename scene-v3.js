@@ -655,7 +655,14 @@ export function initScene(canvas, getSettings) {
     if(equipment.bow==='lendario')slim.setLocalEulerAngles(90,0,180);
     parentEntity.addChild(slim);
     model.setLocalEulerAngles(...spec.rot);
-    model.setLocalScale(spec.scale,spec.scale,spec.scale);
+    // Somente a flecha de poder do Arco Lendário (nível 4):
+    // seu eixo longitudinal original é Z; engrossar apenas X e Y.
+    // Z (comprimento), offset, posição do encaixe e orientação permanecem iguais.
+    if(equipment.bow==='lendario'&&file==='arrow-power.glb'){
+      model.setLocalScale(spec.scale*1.4,spec.scale*1.4,spec.scale);
+    }else{
+      model.setLocalScale(spec.scale,spec.scale,spec.scale);
+    }
     model.setLocalPosition(...spec.offset);
     slim.addChild(model);
     return slim;
