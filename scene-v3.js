@@ -858,7 +858,17 @@ export function initScene(canvas, getSettings) {
     // Arco dos Ventos (nível 3): o GLB está de perfil após alinhar o eixo longo.
     // Rotação Y positiva somente na malha do arco; flecha e mira são irmãos
     // no WeaponPivot e não recebem essa rotação.
-    if(gear.id==='vento'){
+    if(gear.id==='real'){
+      // NÍVEL 2 EXCLUSIVAMENTE: girar a face do Arco Real 90 graus em Y
+      // depois do alinhamento vertical. Flecha, mira e outros níveis
+      // são entidades independentes e conservam suas transformações.
+      const royalFacing=new pc.Entity('Arco Real nivel 2 - face Y +90');
+      royalFacing.setLocalEulerAngles(0,90,0);
+      bowVisualPivot.addChild(royalFacing);
+      royalFacing.addChild(model);
+      parent.dataset.realBowYaw='90';
+      parent.dataset.windBowFaceYaw='0';
+    }else if(gear.id==='vento'){
       const windFacing=new pc.Entity('Arco dos Ventos - face Y +90');
       windFacing.setLocalEulerAngles(0,90,0);
       bowVisualPivot.addChild(windFacing);
