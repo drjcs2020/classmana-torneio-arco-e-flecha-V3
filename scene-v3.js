@@ -859,14 +859,14 @@ export function initScene(canvas, getSettings) {
     // Rotação Y positiva somente na malha do arco; flecha e mira são irmãos
     // no WeaponPivot e não recebem essa rotação.
     if(gear.id==='real'){
-      // NÍVEL 2 EXCLUSIVAMENTE: girar a face do Arco Real 90 graus em Y
-      // depois do alinhamento vertical. Flecha, mira e outros níveis
-      // são entidades independentes e conservam suas transformações.
-      const royalFacing=new pc.Entity('Arco Real nivel 2 - face Y +90');
-      royalFacing.setLocalEulerAngles(0,90,0);
+      // Somente Arco Real (nível 2): giro horário de 90 graus sobre Y.
+      // A correção anterior (+90) deixava a face de perfil;
+      // a flecha e a mira permanecem fora deste pivô visual.
+      const royalFacing=new pc.Entity('Arco Real nivel 2 - face Y -90');
+      royalFacing.setLocalEulerAngles(0,-90,0);
       bowVisualPivot.addChild(royalFacing);
       royalFacing.addChild(model);
-      parent.dataset.realBowYaw='90';
+      parent.dataset.realBowYaw='-90';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='vento'){
       const windFacing=new pc.Entity('Arco dos Ventos - face Y +90');
