@@ -635,9 +635,12 @@ export function initScene(canvas, getSettings) {
     // Nunca calcular escala por AABB runtime: o arquivo standard possui
     // rotação e escala internas, e essa medição produzia uma tora gigante.
     const slim=new pc.Entity('Arrow calibrated shaft');
-    // Só o comprimento muda: Z 1.20 -> 1.02 (-15%).
-    // Largura e altura continuam EXATAMENTE spec.width*5 (+150% aprovado).
-    slim.setLocalScale(spec.width*5,spec.width*5,1.02);
+    // A calibração original permanece intocada nos arcos 1, 2 e 3.
+    // Nos níveis 4 e 5, reduzir visualmente a flecha exagerada para 18%
+    // sem alterar WeaponPivot, trajetória ou os modelos compartilhados.
+    const smallArrow=equipment.bow==='lendario'||equipment.bow==='recurvo';
+    const factor=smallArrow?.18:1;
+    slim.setLocalScale(spec.width*5*factor,spec.width*5*factor,1.02*factor);
     parentEntity.addChild(slim);
     model.setLocalEulerAngles(...spec.rot);
     model.setLocalScale(spec.scale,spec.scale,spec.scale);
@@ -849,31 +852,21 @@ export function initScene(canvas, getSettings) {
       bowVisualPivot.addChild(windFacing);
       windFacing.addChild(model);
       parent.dataset.windBowFaceYaw='90';
-    }else if(gear.id==='lendario'){
-      // SOMENTE NÍVEL 4 (Arco Lendário / bow-legend.glb):
-      // corrigir somente a face lateral; manter a orientação vertical que o GLB já possuía.
-      // Não girar WeaponPivot: a flecha, a mira e os demais arcos
-      // continuam nas suas orientações originais.
-      const legendFacing=new pc.Entity('Arco Lendario nivel 4 - Y 90 Z 0');
-      legendFacing.setLocalEulerAngles(0,90,0);
-      legendFacing.setLocalScale(.75,.75,.75);
-      bowVisualPivot.addChild(legendFacing);
-      legendFacing.addChild(model);
-      parent.dataset.legendBowYaw='90';
+    }else if(gear.id==='lendario'||gear.id==='recurvo'){
+      // Níveis 4 e 5: seguir a mesma orientação do modelo 1/2/3.
+      // fitWeaponModel já alinhou o eixo longitudinal do arco com +Y.
+      // Não adicionar uma segunda rotação arbitrária em X/Y/Z,
+      // pois ela deitava os modelos e/ou os deixava de perfil.
+      const visual=new pc.Entity('Arco alinhado pelo eixo longitudinal');
+      visual.setLocalEulerAngles(0,0,0);
+      visual.setLocalScale(gear.id==='lendario'?.75:1,gear.id==='lendario'?.75:1,gear.id==='lendario'?.75:1);
+      bowVisualPivot.addChild(visual);
+      visual.addChild(model);
+      parent.dataset.windBowFaceYaw='0';
+      parent.dataset.legendBowYaw='0';
       parent.dataset.legendBowRoll='0';
-      parent.dataset.legendBowScale='0.75';
-      parent.dataset.windBowFaceYaw='0';
-    }else if(gear.id==='recurvo'){
-      // SOMENTE NÍVEL 5 (Arco Recurvo): o GLB aparece de costas e
-      // tombado na tela. Corrigir Y/Z depois do alinhamento de eixo longo,
-      // sem girar WeaponPivot, mira ou flecha.
-      const recurveFacing=new pc.Entity('Arco Recurvo nivel 5 - face Y 180 roll Z 50');
-      recurveFacing.setLocalEulerAngles(0,180,50);
-      bowVisualPivot.addChild(recurveFacing);
-      recurveFacing.addChild(model);
-      parent.dataset.recurveBowYaw='180';
-      parent.dataset.recurveBowRoll='50';
-      parent.dataset.windBowFaceYaw='0';
+      parent.dataset.recurveBowYaw='0';
+      parent.dataset.recurveBowRoll='0';
     }else{
       bowVisualPivot.addChild(model);
       parent.dataset.windBowFaceYaw='0';
