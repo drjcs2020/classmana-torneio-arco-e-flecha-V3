@@ -909,11 +909,11 @@ export function initScene(canvas, getSettings) {
       const faceTurn=Number.isFinite(spanX)&&Number.isFinite(spanZ)&&
         spanZ>spanX*1.25?90:0;
       const visual=new pc.Entity('Arco Recurvo nivel 5 - orientação pela malha GLB');
-      visual.setLocalEulerAngles(0,faceTurn,0);
+      visual.setLocalEulerAngles(0,faceTurn,-65);
       bowVisualPivot.addChild(visual);
       visual.addChild(model);
       parent.dataset.recurveBowYaw=String(faceTurn);
-      parent.dataset.recurveBowRoll='0';
+      parent.dataset.recurveBowRoll='-65';
       parent.dataset.recurveSpanX=spanX.toFixed(4);
       parent.dataset.recurveSpanZ=spanZ.toFixed(4);
       parent.dataset.windBowFaceYaw='0';
