@@ -635,11 +635,10 @@ export function initScene(canvas, getSettings) {
     // Nunca calcular escala por AABB runtime: o arquivo standard possui
     // rotação e escala internas, e essa medição produzia uma tora gigante.
     const slim=new pc.Entity('Arrow calibrated shaft');
-    // A calibração original permanece intocada nos arcos 1, 2 e 3.
-    // Nos níveis 4 e 5, reduzir visualmente a flecha exagerada para 18%
-    // sem alterar WeaponPivot, trajetória ou os modelos compartilhados.
-    const smallArrow=equipment.bow==='lendario'||equipment.bow==='recurvo';
-    const factor=smallArrow?.18:1;
+    // Níveis 1, 2, 3 e 5 preservam suas escalas atuais.
+    // Somente nível 4: aumentar 35% a flecha (0.18 * 1.35 = 0.243).
+    // Sem alterar trajetória, flechas dos demais níveis ou WeaponPivot.
+    const factor=equipment.bow==='lendario'?.243:equipment.bow==='recurvo'?.18:1;
     slim.setLocalScale(spec.width*5*factor,spec.width*5*factor,1.02*factor);
     // SOMENTE arco nível 4: girar a flecha +90° ao redor de X,
     // para orientar seu comprimento no sentido da profundidade.
@@ -857,16 +856,16 @@ export function initScene(canvas, getSettings) {
       windFacing.addChild(model);
       parent.dataset.windBowFaceYaw='90';
     }else if(gear.id==='lendario'){
-      // Nível 4: após o alinhamento vertical do modelo, corrigir somente
-      // a face por giro de +90° no eixo Y (vertical do PlayCanvas).
-      // A flecha é outro nó e não herda a rotação do arco.
-      const visual=new pc.Entity('Arco lendario - face Y +90 Z +180');
-      visual.setLocalEulerAngles(0,90,180);
+      // Nível 4: corrigir somente a face do arco por inversão de Y.
+      // Mantém o eixo longitudinal vertical, sem roll Z que o invertia.
+      // A flecha, já orientada corretamente, é um nó independente.
+      const visual=new pc.Entity('Arco lendario - face Y -90 Z 0');
+      visual.setLocalEulerAngles(0,-90,0);
       visual.setLocalScale(.75,.75,.75);
       bowVisualPivot.addChild(visual);
       visual.addChild(model);
-      parent.dataset.legendBowYaw='90';
-      parent.dataset.legendBowRoll='180';
+      parent.dataset.legendBowYaw='-90';
+      parent.dataset.legendBowRoll='0';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='recurvo'){
       // Nível 5 permanece exatamente na calibração anterior.
