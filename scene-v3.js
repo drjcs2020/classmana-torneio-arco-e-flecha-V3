@@ -1059,7 +1059,17 @@ export function initScene(canvas, getSettings) {
     if(resource){
       const mesh=resource.instantiateRenderEntity();
       const calibrated=appendArrowModel(e,mesh,file);
-      calibrated.setLocalScale(calibrated.getLocalScale().clone().mulScalar(.60));
+      if(equipment.bow==='recurvo'&&file==='arrow-precision.glb'){
+        // Somente projétil em voo do nível 5. O arco e a flecha na corda
+        // não são modificados. O GLB precision possui eixo longo local X
+        // que, após sua rotação Y=90°, corresponde a Z do suporte.
+        // Haste mais visível: 3x seção transversal, 4.5x comprimento
+        // frente à animação anterior (que era um palito de ~15 cm).
+        const scale=calibrated.getLocalScale().clone();
+        calibrated.setLocalScale(scale.x*.60*3,scale.y*.60*3,scale.z*.60*4.5);
+      }else{
+        calibrated.setLocalScale(calibrated.getLocalScale().clone().mulScalar(.60));
+      }
     }else{
       const shaft=material('#14181d',{metal:.43,rough:.32}),
         tip=material('#e4e7e8',{metal:.85,rough:.18});
