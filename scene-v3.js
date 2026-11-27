@@ -654,41 +654,12 @@ export function initScene(canvas, getSettings) {
     // Não mudar a física do projétil nem as flechas de outros arcos.
     if(equipment.bow==='lendario')slim.setLocalEulerAngles(90,0,180);
     parentEntity.addChild(slim);
+    // Restaurar o tamanho original do GLB para desfazer a malha gigante.
+    // A posição Y do encaixe, o arco e as calibrações dos outros níveis não mudam.
     model.setLocalEulerAngles(...spec.rot);
-    // Nível 4: preservar comprimento no eixo longitudinal real do GLB.
-    // Engrossar somente os dois eixos transversais.
     model.setLocalScale(spec.scale,spec.scale,spec.scale);
     model.setLocalPosition(...spec.offset);
     slim.addChild(model);
-    if(equipment.bow==='lendario'&&file==='arrow-power.glb'){
-      model.syncHierarchy();
-      const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
-      for(const render of model.findComponents('render')){
-        for(const instance of render.meshInstances||[]){
-          const bb=instance.aabb;
-          if(!bb)continue;
-          for(const sx of [-1,1])for(const sy of [-1,1])for(const sz of [-1,1]){
-            const point=model.worldToLocal(new pc.Vec3(
-              bb.center.x+sx*bb.halfExtents.x,
-              bb.center.y+sy*bb.halfExtents.y,
-              bb.center.z+sz*bb.halfExtents.z));
-            const coords=[point.x,point.y,point.z];
-            for(let i=0;i<3;i++){
-              if(coords[i]<min[i])min[i]=coords[i];
-              if(coords[i]>max[i])max[i]=coords[i];
-            }
-          }
-        }
-      }
-      const lengths=min.map((v,i)=>max[i]-v);
-      const longAxis=lengths.every(Number.isFinite)
-        ?lengths.indexOf(Math.max(...lengths)):2;
-      const crossSection=[2.8,2.8,2.8];
-      crossSection[longAxis]=1;
-      model.setLocalScale(...crossSection.map(n=>spec.scale*n));
-      parent.dataset.level4ArrowLongAxis=['x','y','z'][longAxis];
-      parent.dataset.level4ArrowWidth='2.8x';
-    }
     return slim;
   }
   function selectedArrow(){
