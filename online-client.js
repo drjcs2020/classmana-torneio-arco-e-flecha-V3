@@ -15,10 +15,16 @@ class Online {
   if(method==='GET')for(const [k,v] of Object.entries(payload))url.searchParams.set(k,String(v));
   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),15000);
   try{
+   // GET público sem Authorization/Content-Type: evita preflight CORS desnecessário.
+   const isPublic=method==='GET'&&['ping','roster','ranking'].includes(action);
+   const headers={...(method==='POST'?{'Content-Type':'application/json'}:{}),
+    ...(!isPublic&&this.token?{Authorization:'Bearer '+this.token}:{})};
    const res=await fetch(url,{method,mode:'cors',cache:'no-store',signal:ctrl.signal,
-    headers:{'Content-Type':'application/json',...(this.token?{Authorization:'Bearer '+this.token}:{})},
+    headers,
     ...(method==='POST'?{body:JSON.stringify({...payload,...(action!=='login'?{requestId:requestId||rid()}:{})})}:{})});
-   const answer=await res.json();if(!res.ok||!answer.ok)throw Error(answer.error||'Servidor indisponível');return answer;
+   const answer=await res.json().catch(()=>null);
+   if(!res.ok||!answer?.ok)throw Error((answer?.error||'Servidor indisponível')+' (HTTP '+res.status+')');
+   return answer;
   }catch(e){throw Error(e.name==='AbortError'?'O servidor demorou para responder.':e.message)}
   finally{clearTimeout(timer)}
  }
@@ -42,7 +48,37 @@ class Online {
  async answer(id,decision){return(await this.post('answer',{id,decision})).challenge}
  async submit(id,shots){return this.post('submit',{id,shots})}
  async challenge(id){return(await this.get('challenge',{id})).challenge}
- ranking(){return this.get('ranking')}
+ // Snapshot de uma resposta REAL da API, apenas para leitura se ela falhar.
+ // Não gera vitórias, não altera registros D1 e não autoriza novos duelos.
+ ranking(){
+  if(this.rankingPending)return this.rankingPending;
+  const key='classmana-v3-last-official-ranking';
+  const readSaved=()=>{
+   try{
+    const row=JSON.parse(localStorage.getItem(key)||'null');
+    return row&&Array.isArray(row.data?.players)&&Array.isArray(row.data?.classes)&&
+      Number.isFinite(row.at)&&Date.now()-row.at<7*86400000?row:null;
+   }catch{return null}
+  };
+  const pending=(async()=>{
+   try{
+    const data=await this.get('ranking');
+    if(!Array.isArray(data.players)||!Array.isArray(data.classes))throw Error('Ranking inválido');
+    try{localStorage.setItem(key,JSON.stringify({data,at:Date.now()}))}catch{}
+    return data;
+   }catch(error){
+    const old=readSaved();
+    if(old){
+     console.warn('[ClassMana V3] Ranking indisponível; usando última resposta oficial confirmada:',error);
+     return {...old.data,stale:true,cachedAt:old.at,offlineError:String(error.message||error)};
+    }
+    throw error;
+   }
+  })();
+  this.rankingPending=pending;
+  void pending.finally(()=>{if(this.rankingPending===pending)this.rankingPending=null}).catch(()=>{});
+  return pending;
+ }
  portalUrl(){return location.origin+location.pathname}
 }
 export const online=new Online();
