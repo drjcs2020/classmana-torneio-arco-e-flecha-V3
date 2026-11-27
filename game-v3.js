@@ -1,11 +1,11 @@
-import {initScene} from './scene-v3.js?v=20261127-n4-thickness-only140';
+import {initScene} from './scene-v3.js?v=20261127-n4-width280';
 import {GEAR,GEAR_BY_ID,getGearLevel,isGearUnlocked} from './equipment-catalog.js?v=win-progress-linear-20261110';
 import {mountEquipmentInventory} from './equipment-inventory.js?v=arsenal-button-colors-20261111';
 import {CIRCUITS,LEVELS,targetMotion,mediumTwinTargets,obstacleBlocks,distanceDifficulty,flightSeconds} from './arena-difficulty.js?v=20261113-hard-slower-v6';
 import {arenaAudio} from './arena-audio.js?v=20261114-aplausos-final-v2';
 import {cinematics} from './classmana-cinematics.js?v=20261113-robo-resultado-v4';
 import {initAtmosphere} from './arena-atmosphere.js?v=20261113-shield-proportional-v6';
-import {online} from './online-client.js?v=20261127-pre-otimizacao';
+import {online} from './online-client.js?v=20261127-ranking-recover';
 import {mountSpriteHUD} from './sprite-hud.js?v=1';
 const $=id=>document.getElementById(id);
 function cmResetResultPresentation(){
