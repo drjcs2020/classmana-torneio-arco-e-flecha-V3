@@ -663,12 +663,45 @@ export function initScene(canvas, getSettings) {
   function selectedArrow(){
     return (GEAR_BY_ID[equipment.bow]||GEAR_BY_ID.classico).arrow;
   }
+  // Centraliza a flecha do nível 4 pela posição real dos dois GLBs,
+  // com os dois carregados. O deslocamento é feito APENAS no eixo Y do encaixe.
+  function alignLegendaryArrowToBow(owner){
+    if(equipment.bow!=='lendario'||!owner.__mesh3d||!arrowLoaded?.__mesh3d)return;
+    const midpointY=entity=>{
+      entity.syncHierarchy();
+      let min=Infinity,max=-Infinity;
+      for(const render of entity.findComponents('render')){
+        for(const inst of render.meshInstances||[]){
+          const bb=inst.aabb;
+          if(!bb)continue;
+          for(const sign of [-1,1]){
+            const p=new pc.Vec3(bb.center.x,bb.center.y+sign*bb.halfExtents.y,bb.center.z);
+            const y=bowRoot.worldToLocal(p).y;
+            min=Math.min(min,y);max=Math.max(max,y);
+          }
+        }
+      }
+      return Number.isFinite(min)&&Number.isFinite(max)?(min+max)*.5:null;
+    };
+    bowRoot.syncHierarchy();
+    const bowMid=midpointY(owner.__mesh3d);
+    const arrowMid=midpointY(arrowLoaded.__mesh3d);
+    if(bowMid===null||arrowMid===null)return;
+    // A flecha tinha seu ponto médio abaixo da metade do arco. Sem limite
+    // de 1.25 unidade: esse teto impedia a correção quando o GLB é deslocado.
+    legendaryArrowLift+=bowMid-arrowMid;
+    const nock=arrowNockPose();
+    arrowLoaded.setLocalPosition(nock.x,nock.y,nock.z);
+    bowRoot.syncHierarchy();
+    parent.dataset.legendArrowCenter='aligned';
+  }
   // Só revelar a arma quando arco E flecha GLB terminarem de carregar.
   function revealLoadedWeapon(owner){
     if(owner!==bowRoot||!owner.__bowLoaded||!owner.__arrowLoaded)return;
     for(const child of owner.__fallbacks||[])
       child.enabled=owner.__bowFailed||child===arrowLoaded||child===sightAnchor;
     owner.enabled=true;
+    alignLegendaryArrowToBow(owner);
     updateBowAim();
     parent.dataset.weaponPose='v1-mechanics-arrow-grip-lowered-007-v13';
     parent.dataset.glbBow=owner.__bowFailed?'fallback':'ready';
@@ -686,32 +719,6 @@ export function initScene(canvas, getSettings) {
       arrowLoaded.__mesh3d?.destroy();
       const mesh=res.instantiateRenderEntity();mesh.name='Flecha '+file;
       const calibrated=appendArrowModel(arrowLoaded,mesh,file);
-      if(id==='lendario'){
-        // Calcular o ponto médio visual da flecha em coordenadas do encaixe.
-        // A compensação atua somente em Y; NÃO muda rotação, escala ou profundidade.
-        calibrated.syncHierarchy();
-        let low=Infinity,high=-Infinity;
-        for(const render of calibrated.findComponents('render')){
-          for(const instance of render.meshInstances||[]){
-            const bb=instance.aabb;
-            if(!bb)continue;
-            for(const sx of [-1,1])for(const sy of [-1,1])for(const sz of [-1,1]){
-              const world=new pc.Vec3(
-                bb.center.x+sx*bb.halfExtents.x,
-                bb.center.y+sy*bb.halfExtents.y,
-                bb.center.z+sz*bb.halfExtents.z);
-              const local=arrowLoaded.worldToLocal(world);
-              low=Math.min(low,local.y);
-              high=Math.max(high,local.y);
-            }
-          }
-        }
-        // Nunca permitir que a flecha continue no pé do arco.
-        legendaryArrowLift=Number.isFinite(low)&&Number.isFinite(high)
-          ?Math.max(.15,Math.min(1.25,-(low+high)/2)):.45;
-        const nock=arrowNockPose();
-        arrowLoaded.setLocalPosition(nock.x,nock.y,nock.z);
-      }
       for(const child of arrowLoaded.children)if(child!==calibrated)child.enabled=false;
       arrowLoaded.__mesh3d=calibrated;
       owner.__arrowLoaded=true;
@@ -934,6 +941,7 @@ export function initScene(canvas, getSettings) {
   function loadBowModel(){
     const owner=bowRoot,id=equipment.bow,gear=GEAR_BY_ID[id]||GEAR_BY_ID.classico;
     if(!owner)return;
+    if(id==='lendario')legendaryArrowLift=0;
     const token=owner.__bowLoadToken=(owner.__bowLoadToken||0)+1;
     owner.enabled=false;
     owner.__bowLoaded=false;owner.__arrowLoaded=false;
