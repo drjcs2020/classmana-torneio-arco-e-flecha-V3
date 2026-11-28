@@ -930,15 +930,15 @@ export function initScene(canvas, getSettings) {
       // Z do PAI, nao do X original do GLB.
       // QrollZ * QyawY: a rotacao de Z ocorre depois do alinhamento,
       // mantendo o eixo de profundidade (alvo) inalterado.
-      const crossbowFacing=new pc.Entity('Besta Leve nivel 8 - horizontal');
+      const crossbowFacing=new pc.Entity('Besta Leve nivel 8 - mira para cima');
       const aimYaw=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,1,0),-90);
-      const horizontalRoll=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,0,1),90);
+      const horizontalRoll=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,0,1),-90);
       crossbowFacing.setLocalRotation(horizontalRoll.mul(aimYaw));
       bowVisualPivot.addChild(crossbowFacing);
       crossbowFacing.addChild(model);
       parent.dataset.lightCrossbowYaw='-90';
-      parent.dataset.lightCrossbowRoll='90-parent-z';
-      parent.dataset.lightCrossbowMode='target-direction-plus-horizontal-roll';
+      parent.dataset.lightCrossbowRoll='-90-parent-z';
+      parent.dataset.lightCrossbowMode='target-direction-plus-upright-roll';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='explorador'){
       // Nível 6: a malha bow-ranger.glb.gz já passou pelo alinhamento
