@@ -925,19 +925,18 @@ export function initScene(canvas, getSettings) {
       parent.dataset.recurveSpanZ=spanZ.toFixed(4);
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='besta_leve'){
-      // A direção da Besta Leve fica ao longo de -Z. Seu eixo
-      // longitudinal no GLB é X: o yaw de +90 converte X em -Z.
-      // As lâminas ainda apareciam verticais: corrigir o roll de 90
-      // graus EM TORNO DO EIXO LONGITUDINAL ORIGINAL X, antes do yaw.
-      // Compor quaternions evita reinterpretar o roll no eixo da câmera.
+      // A captura de teste mostrou a FRENTE DA BESTA para a esquerda,
+      // oposta ao alvo. Inverter somente o sentido longitudinal, pelo
+      // Y do pai (180 graus relativos ao estado anterior), preservando
+      // a rotação axial -90 de lâminas horizontais e toda a geometria.
       const crossbowFacing=new pc.Entity('Besta Leve nivel 8 - lâminas horizontais');
-      const aimYaw=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,1,0),90);
-      // Espelhar a face das lâminas, sem modificar a direção longitudinal.
+      const aimYaw=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,1,0),-90);
+      // Manter a inclinação axial da captura: lâminas horizontais.
       const shaftRoll=new pc.Quat().setFromAxisAngle(new pc.Vec3(1,0,0),-90);
       crossbowFacing.setLocalRotation(aimYaw.mul(shaftRoll));
       bowVisualPivot.addChild(crossbowFacing);
       crossbowFacing.addChild(model);
-      parent.dataset.lightCrossbowYaw='90';
+      parent.dataset.lightCrossbowYaw='-90';
       parent.dataset.lightCrossbowRoll='-90-local-shaft-x';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='explorador'){
