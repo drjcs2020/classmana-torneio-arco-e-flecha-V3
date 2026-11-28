@@ -1035,10 +1035,12 @@ export function initScene(canvas, getSettings) {
     if(equipment.bow==='lendario')
       return {x:.015,y:LEGENDARY_ARROW_Y_OFFSET,z:.13,yaw:0};
     // Exclusivamente nível 7: elevar a flecha ao encaixe do arco de Aloy.
-    // Um centímetro abaixo do encaixe calibrado do nível 4;
+    // Deslocamento de 0.11 unidade abaixo do encaixe do nível 4;
     // sem mexer em X, Z, orientação, escala ou no modelo do arco.
+    // No nível 7, deslocamento visual perceptível para baixo: 0.10
+    // unidade da cena, mantendo o mesmo X, Z e rotação da flecha.
     if(equipment.bow==='aloy')
-      return {x:.015,y:LEGENDARY_ARROW_Y_OFFSET-.01,z:.13,yaw:0};
+      return {x:.015,y:LEGENDARY_ARROW_Y_OFFSET-.11,z:.13,yaw:0};
     return {x:.015,y:0,z:.13,yaw:0};
   }
   function updateBowAim(){
@@ -1131,6 +1133,11 @@ export function initScene(canvas, getSettings) {
         // frente à animação anterior (que era um palito de ~15 cm).
         const scale=calibrated.getLocalScale().clone();
         calibrated.setLocalScale(scale.x*.60*3,scale.y*.60*3,scale.z*.60*4.5);
+      }else if(equipment.bow==='aloy'&&file==='arrow-power.glb'){
+        // Exclusivamente a flecha EM VOO do nível 7: aumentar 3x
+        // a dimensão completa em relação à animação anterior (.60 -> 1.80).
+        // Não tocar na flecha encaixada, no arco ou no hitmarker do alvo.
+        calibrated.setLocalScale(calibrated.getLocalScale().clone().mulScalar(1.80));
       }else{
         calibrated.setLocalScale(calibrated.getLocalScale().clone().mulScalar(.60));
       }
