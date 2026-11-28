@@ -925,15 +925,14 @@ export function initScene(canvas, getSettings) {
       parent.dataset.recurveSpanZ=spanZ.toFixed(4);
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='besta_leve'){
-      // O GLB da Besta Leve tem o corpo longitudinal no eixo X original.
-      // Sua frente está para -X e o alvo fica em -Z: girar -90 graus
-      // em Y converte -X em -Z. Girar SOMENTE o modelo visual.
-      // Flecha, mira, escala, trajetória e demais equipamentos não herdam o giro.
-      const crossbowFacing=new pc.Entity('Besta Leve nivel 8 - apontar ao alvo');
-      crossbowFacing.setLocalEulerAngles(0,-90,0);
+      // A captura após yaw -90 mostrou a coronha voltada para a
+      // câmera. Inverter só a direção do modelo visual em 180 graus:
+      // yaw +90 (sem alterar escala, posição, flecha nem mira).
+      const crossbowFacing=new pc.Entity('Besta Leve nivel 8 - frente para o alvo');
+      crossbowFacing.setLocalEulerAngles(0,90,0);
       bowVisualPivot.addChild(crossbowFacing);
       crossbowFacing.addChild(model);
-      parent.dataset.lightCrossbowYaw='-90';
+      parent.dataset.lightCrossbowYaw='90';
       parent.dataset.lightCrossbowRoll='0';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='explorador'){
