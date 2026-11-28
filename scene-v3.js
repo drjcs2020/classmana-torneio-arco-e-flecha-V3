@@ -925,21 +925,20 @@ export function initScene(canvas, getSettings) {
       parent.dataset.recurveSpanZ=spanZ.toFixed(4);
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='besta_leve'){
-      // crossbow-light.glb: Sketchfab_model já gira o eixo transversal
-      // da malha (Y original) para -Z no PlayCanvas.
-      // Pela geometria original, X é o comprimento e -X é a frente
-      // (lâminas). Yaw -90 mapeia a frente -X para -Z (alvo)
-      // e o eixo transversal -Z para X (lâminas horizontais).
-      // NÃO aplicar roll X adicional: ele desfaz o alinhamento interno.
-      const crossbowFacing=new pc.Entity('Besta Leve nivel 8 - orientação nativa');
-      crossbowFacing.setLocalRotation(
-        new pc.Quat().setFromAxisAngle(new pc.Vec3(0,1,0),-90)
-      );
+      // Nivel 8: manter a direcao frontal que ja foi acertada pelo
+      // giro Y=-90 e apenas deitar as laminas em torno do eixo de mira
+      // Z do PAI, nao do X original do GLB.
+      // QrollZ * QyawY: a rotacao de Z ocorre depois do alinhamento,
+      // mantendo o eixo de profundidade (alvo) inalterado.
+      const crossbowFacing=new pc.Entity('Besta Leve nivel 8 - horizontal');
+      const aimYaw=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,1,0),-90);
+      const horizontalRoll=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,0,1),90);
+      crossbowFacing.setLocalRotation(horizontalRoll.mul(aimYaw));
       bowVisualPivot.addChild(crossbowFacing);
       crossbowFacing.addChild(model);
       parent.dataset.lightCrossbowYaw='-90';
-      parent.dataset.lightCrossbowRoll='0';
-      parent.dataset.lightCrossbowMode='native-glb-yaw-only';
+      parent.dataset.lightCrossbowRoll='90-parent-z';
+      parent.dataset.lightCrossbowMode='target-direction-plus-horizontal-roll';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='explorador'){
       // Nível 6: a malha bow-ranger.glb.gz já passou pelo alinhamento
