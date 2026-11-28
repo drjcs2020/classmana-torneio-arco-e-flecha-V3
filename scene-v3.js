@@ -933,12 +933,16 @@ export function initScene(canvas, getSettings) {
       const crossbowFacing=new pc.Entity('Besta Leve nivel 8 - mira para cima');
       const aimYaw=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,1,0),-90);
       const horizontalRoll=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,0,1),-90);
-      crossbowFacing.setLocalRotation(horizontalRoll.mul(aimYaw));
+      // O eixo longitudinal da malha original é X. Virar 180° no X LOCAL
+      // inverte a mira (baixo -> cima) sem mudar para onde o virote aponta.
+      const uprightSight=new pc.Quat().setFromAxisAngle(new pc.Vec3(1,0,0),180);
+      crossbowFacing.setLocalRotation(horizontalRoll.mul(aimYaw).mul(uprightSight));
       bowVisualPivot.addChild(crossbowFacing);
       crossbowFacing.addChild(model);
       parent.dataset.lightCrossbowYaw='-90';
       parent.dataset.lightCrossbowRoll='-90-parent-z';
-      parent.dataset.lightCrossbowMode='target-direction-plus-upright-roll';
+      parent.dataset.lightCrossbowMode='forward-preserving-local-x-flip-180';
+      parent.dataset.lightCrossbowSightFlip='180-local-x';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='explorador'){
       // Nível 6: a malha bow-ranger.glb.gz já passou pelo alinhamento
