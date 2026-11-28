@@ -932,7 +932,7 @@ export function initScene(canvas, getSettings) {
       // mantendo o eixo de profundidade (alvo) inalterado.
       const crossbowFacing=new pc.Entity('Besta Leve nivel 8 - mira para cima');
       const aimYaw=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,1,0),-90);
-      const horizontalRoll=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,0,1),-90);
+      const horizontalRoll=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,0,1),90); // giro de 180° em relação à pose anterior
       // O eixo longitudinal da malha original é X. Virar 180° no X LOCAL
       // inverte a mira (baixo -> cima) sem mudar para onde o virote aponta.
       const uprightSight=new pc.Quat().setFromAxisAngle(new pc.Vec3(1,0,0),180);
@@ -940,7 +940,7 @@ export function initScene(canvas, getSettings) {
       bowVisualPivot.addChild(crossbowFacing);
       crossbowFacing.addChild(model);
       parent.dataset.lightCrossbowYaw='-90';
-      parent.dataset.lightCrossbowRoll='-90-parent-z';
+      parent.dataset.lightCrossbowRoll='90-parent-z-180-flip';
       parent.dataset.lightCrossbowMode='forward-preserving-local-x-flip-180';
       parent.dataset.lightCrossbowSightFlip='180-local-x';
       parent.dataset.windBowFaceYaw='0';
