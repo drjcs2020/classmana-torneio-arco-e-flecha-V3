@@ -925,15 +925,19 @@ export function initScene(canvas, getSettings) {
       parent.dataset.recurveSpanZ=spanZ.toFixed(4);
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='besta_leve'){
-      // A captura após yaw -90 mostrou a coronha voltada para a
-      // câmera. Inverter só a direção do modelo visual em 180 graus:
-      // yaw +90 (sem alterar escala, posição, flecha nem mira).
-      const crossbowFacing=new pc.Entity('Besta Leve nivel 8 - frente para o alvo');
-      crossbowFacing.setLocalEulerAngles(0,90,0);
+      // A direção da Besta Leve fica ao longo de -Z. Seu eixo
+      // longitudinal no GLB é X: o yaw de +90 converte X em -Z.
+      // As lâminas ainda apareciam verticais: corrigir o roll de 90
+      // graus EM TORNO DO EIXO LONGITUDINAL ORIGINAL X, antes do yaw.
+      // Compor quaternions evita reinterpretar o roll no eixo da câmera.
+      const crossbowFacing=new pc.Entity('Besta Leve nivel 8 - lâminas horizontais');
+      const aimYaw=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,1,0),90);
+      const shaftRoll=new pc.Quat().setFromAxisAngle(new pc.Vec3(1,0,0),90);
+      crossbowFacing.setLocalRotation(aimYaw.mul(shaftRoll));
       bowVisualPivot.addChild(crossbowFacing);
       crossbowFacing.addChild(model);
       parent.dataset.lightCrossbowYaw='90';
-      parent.dataset.lightCrossbowRoll='0';
+      parent.dataset.lightCrossbowRoll='90-local-shaft-x';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='explorador'){
       // Nível 6: a malha bow-ranger.glb.gz já passou pelo alinhamento
