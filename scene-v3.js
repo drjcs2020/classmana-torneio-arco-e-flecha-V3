@@ -932,12 +932,13 @@ export function initScene(canvas, getSettings) {
       // Compor quaternions evita reinterpretar o roll no eixo da câmera.
       const crossbowFacing=new pc.Entity('Besta Leve nivel 8 - lâminas horizontais');
       const aimYaw=new pc.Quat().setFromAxisAngle(new pc.Vec3(0,1,0),90);
-      const shaftRoll=new pc.Quat().setFromAxisAngle(new pc.Vec3(1,0,0),90);
+      // Espelhar a face das lâminas, sem modificar a direção longitudinal.
+      const shaftRoll=new pc.Quat().setFromAxisAngle(new pc.Vec3(1,0,0),-90);
       crossbowFacing.setLocalRotation(aimYaw.mul(shaftRoll));
       bowVisualPivot.addChild(crossbowFacing);
       crossbowFacing.addChild(model);
       parent.dataset.lightCrossbowYaw='90';
-      parent.dataset.lightCrossbowRoll='90-local-shaft-x';
+      parent.dataset.lightCrossbowRoll='-90-local-shaft-x';
       parent.dataset.windBowFaceYaw='0';
     }else if(gear.id==='explorador'){
       // Nível 6: a malha bow-ranger.glb.gz já passou pelo alinhamento
